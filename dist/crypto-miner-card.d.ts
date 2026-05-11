@@ -36,6 +36,7 @@ export declare class CryptoMinerCard extends LitElement {
     private _getEntityStateWithUnit;
     private _formatPowerState;
     private _formatEfficiencyState;
+    private _formatHashrateState;
     protected render(): import("lit-html").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;
 }

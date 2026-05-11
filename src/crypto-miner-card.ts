@@ -242,6 +242,34 @@ export class CryptoMinerCard extends LitElement {
     return `${numericState.toFixed(2)} J/TH`;
   }
 
+  private _formatHashrateState(entityId?: string): string {
+    const state = this._getEntityState(entityId);
+    if (state === "--" || state === "n/a") {
+      return state;
+    }
+
+    const numericState = Number(state);
+    if (!Number.isFinite(numericState)) {
+      return this._getEntityStateWithUnit(entityId);
+    }
+
+    const formattedValue = numericState.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    if (!entityId) {
+      return formattedValue;
+    }
+
+    const unit = this.hass?.states?.[entityId]?.attributes?.unit_of_measurement;
+    if (typeof unit === "string" && unit.trim().length > 0) {
+      return `${formattedValue} ${unit}`;
+    }
+
+    return formattedValue;
+  }
+
   protected render() {
     const title = this._config?.title?.trim() || "Crypto Mining Fleet";
 
@@ -280,14 +308,14 @@ export class CryptoMinerCard extends LitElement {
               <div class="chip-rate-head">
                 <span class="chip-label">BTC Hashrate</span>
               </div>
-              <span class="chip-value">${this._getEntityStateWithUnit(this._config?.btc_rate_entity)}</span>
+              <span class="chip-value">${this._formatHashrateState(this._config?.btc_rate_entity)}</span>
             </div>
 
             <div class="sensor-chip stage-item hud-bch-rate">
               <div class="chip-rate-head">
                 <span class="chip-label">BCH Hashrate</span>
               </div>
-              <span class="chip-value">${this._getEntityStateWithUnit(this._config?.bch_rate_entity)}</span>
+              <span class="chip-value">${this._formatHashrateState(this._config?.bch_rate_entity)}</span>
             </div>
 
             <div class="sensor-chip stage-item hud-ltc-rate">
