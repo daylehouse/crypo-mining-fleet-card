@@ -1,6 +1,6 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import baseImage from "./baseimage.webp";
+import baseImage from "./baselayer.png";
 import { CryptoMinerCardConfig } from "./types";
 
 @customElement("crypto-miner-card")

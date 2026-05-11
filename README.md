@@ -2,7 +2,7 @@
 
 A Home Assistant custom dashboard card for monitoring a crypto miner fleet. Display real-time statistics for online and offline miners with a beautiful, responsive UI.
 
-![Crypto Mining Fleet Card preview](src/baseimage.webp)
+![Crypto Mining Fleet Card preview](src/baselayer.png)
 
 ## Features
 
@@ -10,7 +10,7 @@ A Home Assistant custom dashboard card for monitoring a crypto miner fleet. Disp
 - **Responsive Design**: Works on desktop, tablet, and mobile devices  
 - **Easy Configuration**: Simple UI for entity selection
 - **Home Assistant Integration**: Full support for Home Assistant Lovelace dashboard
-- **Background Image**: Customizable background with baseimage.webp
+- **Background Image**: Customizable background with baselayer.png
 
 ## Installation
 
