@@ -43,14 +43,14 @@ export class CryptoMinerCard extends LitElement {
   }
 
   getCardSize(): number {
-    return 3;
+    return 4;
   }
 
   getGridOptions() {
     return {
-      rows: 3,
+      rows: 4,
       min_rows: 2,
-      columns: 6
+      columns: 12
     };
   }
 
@@ -63,32 +63,34 @@ export class CryptoMinerCard extends LitElement {
   }
 
   protected render() {
-    if (!this._config) {
+    if (!this._config || !this.hass) {
       return html`<p>Configuration error</p>`;
     }
 
     const onlineMinersState = this._config.online_miners_entity
-      ? this.hass?.states[this._config.online_miners_entity]?.state
+      ? this.hass.states[this._config.online_miners_entity]?.state ?? "N/A"
       : "N/A";
 
     const offlineMinersState = this._config.offline_miners_entity
-      ? this.hass?.states[this._config.offline_miners_entity]?.state
+      ? this.hass.states[this._config.offline_miners_entity]?.state ?? "N/A"
       : "N/A";
 
     return html`
       <ha-card>
-        <div class="card-header">
-          <h1 class="card-title">${this._config.title || "Crypto Mining Fleet"}</h1>
-        </div>
-        <div class="card-content" style=${`background-image: linear-gradient(rgba(9, 18, 29, 0.72), rgba(9, 18, 29, 0.72)), url('${baseImage}');`}>
-          <div class="miner-stats">
-            <div class="stat-box online">
-              <div class="stat-label">Online Miners</div>
-              <div class="stat-value">${onlineMinersState}</div>
+        <div class="card-content" style=${`background-image: linear-gradient(rgba(9, 18, 29, 0.75), rgba(9, 18, 29, 0.75)), url('${baseImage}');`}>
+          <div class="stage">
+            <div class="card-header">
+              <h1 class="card-title">${this._config.title || "Crypto Mining Fleet"}</h1>
             </div>
-            <div class="stat-box offline">
-              <div class="stat-label">Offline Miners</div>
-              <div class="stat-value">${offlineMinersState}</div>
+            <div class="miner-stats">
+              <div class="stat-box online">
+                <div class="stat-label">Online Miners</div>
+                <div class="stat-value">${onlineMinersState}</div>
+              </div>
+              <div class="stat-box offline">
+                <div class="stat-label">Offline Miners</div>
+                <div class="stat-value">${offlineMinersState}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -106,25 +108,43 @@ export class CryptoMinerCard extends LitElement {
 
       ha-card {
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        height: 100%;
+      }
+
+      .card-content {
+        padding: 24px;
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+        min-height: 400px;
+        position: relative;
+        aspect-ratio: 16 / 9;
+      }
+
+      .stage {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
 
       .card-header {
-        padding: 16px;
-        border-bottom: 1px solid #e0e0e0;
+        margin-bottom: 32px;
       }
 
       .card-title {
         margin: 0;
-        font-size: 1.5em;
-        font-weight: 500;
-        color: var(--primary-text-color);
-      }
-
-      .card-content {
-        padding: 16px;
-        background-size: cover;
-        background-position: center;
-        border-radius: 0 0 12px 12px;
+        font-size: 2em;
+        font-weight: 600;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
 
       .miner-stats {
@@ -160,6 +180,11 @@ export class CryptoMinerCard extends LitElement {
       .stat-value {
         font-size: 2.5em;
         font-weight: bold;
+      }
+
+      /* Helper class for coordinate-based sensor placement */
+      .sensor-positioned {
+        position: absolute;
       }
 
       @media (max-width: 600px) {
