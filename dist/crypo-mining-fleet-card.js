@@ -4,15 +4,22 @@ var t={d:(e,s)=>{for(var i in s)t.o(s,i)&&!t.o(e,i)&&Object.defineProperty(e,i,{
         <div class="card-content" style=${`background-image: url('${$t}');`}></div>
       </ha-card>
     `}static get styles(){return n`
+      :host {
+        margin: 0;
+        padding: 0;
+        display: block;
+      }
+
       ha-card {
         overflow: hidden;
+        margin: 0;
       }
 
       .card-content {
-        width: 99%;
+        width: 100%;
         aspect-ratio: 3 / 4;
         background-size: cover;
-        background-position: left top;
+        background-position: -5% top;
         background-repeat: no-repeat;
         background-color: #000;
       }

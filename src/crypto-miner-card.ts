@@ -41,15 +41,22 @@ export class CryptoMinerCard extends LitElement {
 
   static get styles() {
     return css`
+      :host {
+        margin: 0;
+        padding: 0;
+        display: block;
+      }
+
       ha-card {
         overflow: hidden;
+        margin: 0;
       }
 
       .card-content {
-        width: 99%;
+        width: 100%;
         aspect-ratio: 3 / 4;
         background-size: cover;
-        background-position: left top;
+        background-position: -5% top;
         background-repeat: no-repeat;
         background-color: #000;
       }
