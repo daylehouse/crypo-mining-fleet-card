@@ -1,8 +1,8 @@
 {
   "name": "crypo-mining-fleet-card",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Home Assistant custom card for monitoring a crypto miner fleet",
-  "main": "dist/crypo-mining-fleet-card-v2.js",
+  "main": "dist/crypo-mining-fleet-card.js",
   "scripts": {
     "dev": "webpack --mode development --watch",
     "build": "npm run clean && webpack --mode production",
