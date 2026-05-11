@@ -7,7 +7,8 @@
     "dev": "webpack --mode development --watch",
     "build": "npm run clean && webpack --mode production",
     "clean": "rimraf dist",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "analyze": "webpack-bundle-analyzer dist/crypo-mining-fleet-card.js"
   },
   "keywords": [
     "home-assistant",
@@ -28,6 +29,7 @@
     "eslint": "^8.0.0",
     "lit": "^3.0.0",
     "rimraf": "^5.0.0",
+    "terser-webpack-plugin": "^5.3.0",
     "ts-loader": "^9.4.0",
     "typescript": "^5.2.0",
     "webpack": "^5.89.0",

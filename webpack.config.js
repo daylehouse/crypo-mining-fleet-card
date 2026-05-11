@@ -1,4 +1,5 @@
 const path = require('path');
+const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
   mode: 'production',
@@ -13,6 +14,22 @@ module.exports = {
   experiments: {
     outputModule: true
   },
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          compress: {
+            drop_console: true
+          }
+        }
+      })
+    ]
+  },
+  performance: {
+    maxAssetSize: 512000,
+    maxEntrypointSize: 512000
+  },
   module: {
     rules: [
       {
@@ -23,6 +40,11 @@ module.exports = {
       {
         test: /\.(png|jpe?g|gif|webp)$/i,
         type: 'asset/resource',
+        parser: {
+          dataUrlCondition: {
+            maxSize: 8 * 1024
+          }
+        },
         generator: {
           filename: 'assets/[name][ext]'
         }
@@ -31,6 +53,5 @@ module.exports = {
   },
   resolve: {
     extensions: ['.ts', '.js']
-  },
-  devtool: 'source-map'
+  }
 };
