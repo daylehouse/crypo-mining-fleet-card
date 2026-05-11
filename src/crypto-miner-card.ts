@@ -1,6 +1,8 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, unsafeCSS } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import baseImage from "./baselayer.png";
+import alienRegular from "./Alien-Encounters-Solid-Regular.ttf";
+import alienBold from "./Alien-Encounters-Solid-Bold.ttf";
 import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
 
 @customElement("crypto-miner-card")
@@ -207,10 +209,25 @@ export class CryptoMinerCard extends LitElement {
 
   static get styles() {
     return css`
+      @font-face {
+        font-family: "AlienEncountersRegular";
+        src: ${unsafeCSS(`url(${alienRegular})`)} format("truetype");
+        font-style: normal;
+        font-weight: 400;
+      }
+
+      @font-face {
+        font-family: "AlienEncountersBold";
+        src: ${unsafeCSS(`url(${alienBold})`)} format("truetype");
+        font-style: normal;
+        font-weight: 700;
+      }
+
       :host {
         margin: 0;
         padding: 0;
         display: block;
+        font-family: "AlienEncountersRegular", sans-serif;
       }
 
       ha-card {
@@ -253,11 +270,12 @@ export class CryptoMinerCard extends LitElement {
         padding: 6px 12px;
         color: #fff;
         font-size: 0.8rem;
+        font-family: "AlienEncountersBold", sans-serif;
         font-weight: 700;
         letter-spacing: 0.04em;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-        background: rgba(10, 12, 18, 0.55);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: transparent;
+        border: none;
       }
 
       .sensor-chip {
@@ -273,6 +291,7 @@ export class CryptoMinerCard extends LitElement {
         font-size: 0.75rem;
         line-height: 1;
         transform: translate(-50%, -50%);
+        border: none;
       }
 
       .chip-prefix {
@@ -280,33 +299,41 @@ export class CryptoMinerCard extends LitElement {
         padding: 2px 5px;
         font-size: 0.62rem;
         letter-spacing: 0.04em;
+        font-family: "AlienEncountersBold", sans-serif;
         font-weight: 700;
         color: #fff;
+        border: none;
       }
 
       .chip-label {
         opacity: 0.9;
+        font-family: "AlienEncountersRegular", sans-serif;
       }
 
       .chip-value {
         margin-left: 2px;
+        font-family: "AlienEncountersBold", sans-serif;
         font-weight: 700;
       }
 
       .chip-online {
-        background: rgba(27, 146, 73, 0.9);
+        background: transparent;
+        color: rgba(27, 146, 73, 1);
       }
 
       .chip-efficiency {
-        background: rgba(57, 102, 195, 0.9);
+        background: transparent;
+        color: rgba(57, 102, 195, 1);
       }
 
       .chip-power {
-        background: rgba(181, 104, 12, 0.9);
+        background: transparent;
+        color: rgba(181, 104, 12, 1);
       }
 
       .chip-offline {
-        background: rgba(165, 39, 45, 0.9);
+        background: transparent;
+        color: rgba(165, 39, 45, 1);
       }
 
       .hud-online {
