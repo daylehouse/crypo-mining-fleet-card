@@ -24,7 +24,7 @@ var t={d:(e,s)=>{for(var i in s)t.o(s,i)&&!t.o(e,i)&&Object.defineProperty(e,i,{
       .card-shell {
         position: relative;
         overflow: hidden;
-        aspect-ratio: 16 / 18;
+        aspect-ratio: 16 / 18.9;
       }
 
       .card-image {

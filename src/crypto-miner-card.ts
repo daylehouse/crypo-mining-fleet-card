@@ -102,7 +102,7 @@ export class CryptoMinerCard extends LitElement {
       .card-shell {
         position: relative;
         overflow: hidden;
-        aspect-ratio: 16 / 18;
+        aspect-ratio: 16 / 18.9;
       }
 
       .card-image {
