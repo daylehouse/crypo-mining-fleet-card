@@ -1,9 +1,30 @@
-import { LitElement, html, css, unsafeCSS } from "lit";
+import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import baseImage from "./baselayer.png";
 import alienRegular from "./Alien-Encounters-Solid-Regular.ttf";
 import alienBold from "./Alien-Encounters-Solid-Bold.ttf";
 import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
+
+// Inject @font-face into document head so fonts work across Shadow DOM boundaries
+if (!document.getElementById("crypto-miner-card-fonts")) {
+  const style = document.createElement("style");
+  style.id = "crypto-miner-card-fonts";
+  style.textContent = `
+    @font-face {
+      font-family: "AlienEncountersRegular";
+      src: url("${alienRegular}") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "AlienEncountersBold";
+      src: url("${alienBold}") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 @customElement("crypto-miner-card")
 export class CryptoMinerCard extends LitElement {
@@ -177,13 +198,12 @@ export class CryptoMinerCard extends LitElement {
             <div class="card-title stage-item">${title}</div>
 
             <div class="sensor-chip stage-item hud-online">
-              <span class="chip-prefix chip-online">ONL</span>
+              <span class="chip-icon">⚡</span>
               <span class="chip-label">Online Miners</span>
               <span class="chip-value">${this._getEntityState(this._config?.online_miners_entity)}</span>
             </div>
 
             <div class="sensor-chip stage-item hud-efficiency">
-              <span class="chip-prefix chip-efficiency">EFF</span>
               <span class="chip-label">Energy Efficiency</span>
               <span class="chip-value"
                 >${this._formatEfficiencyState(this._config?.fleet_energy_efficiency_entity)}</span
@@ -191,16 +211,17 @@ export class CryptoMinerCard extends LitElement {
             </div>
 
             <div class="sensor-chip stage-item hud-power">
-              <span class="chip-prefix chip-power">PWR</span>
+              <span class="chip-icon">⚡</span>
               <span class="chip-label">Power</span>
               <span class="chip-value">${this._formatPowerState(this._config?.fleet_power_entity)}</span>
             </div>
 
             <div class="sensor-chip stage-item hud-offline">
-              <span class="chip-prefix chip-offline">OFF</span>
               <span class="chip-label">Miners Offline</span>
               <span class="chip-value">${this._getEntityState(this._config?.offline_miners_entity)}</span>
             </div>
+
+            <div class="fleet-power-title stage-item">Fleet Power</div>
           </div>
         </div>
       </ha-card>
@@ -209,20 +230,6 @@ export class CryptoMinerCard extends LitElement {
 
   static get styles() {
     return css`
-      @font-face {
-        font-family: "AlienEncountersRegular";
-        src: ${unsafeCSS(`url(${alienRegular})`)} format("truetype");
-        font-style: normal;
-        font-weight: 400;
-      }
-
-      @font-face {
-        font-family: "AlienEncountersBold";
-        src: ${unsafeCSS(`url(${alienBold})`)} format("truetype");
-        font-style: normal;
-        font-weight: 700;
-      }
-
       :host {
         margin: 0;
         padding: 0;
@@ -294,46 +301,36 @@ export class CryptoMinerCard extends LitElement {
         border: none;
       }
 
-      .chip-prefix {
-        border-radius: 4px;
-        padding: 2px 5px;
-        font-size: 0.62rem;
-        letter-spacing: 0.04em;
-        font-family: "AlienEncountersBold", sans-serif;
-        font-weight: 700;
-        color: #fff;
-        border: none;
-      }
-
       .chip-label {
         opacity: 0.9;
         font-family: "AlienEncountersRegular", sans-serif;
+      }
+
+      .chip-icon {
+        font-size: 0.85rem;
+        line-height: 1;
+      }
+
+      .fleet-power-title {
+        position: absolute;
+        top: 63%;
+        left: 70%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-size: 0.72rem;
+        font-family: "AlienEncountersBold", sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        background: transparent;
+        border: none;
+        white-space: nowrap;
       }
 
       .chip-value {
         margin-left: 2px;
         font-family: "AlienEncountersBold", sans-serif;
         font-weight: 700;
-      }
-
-      .chip-online {
-        background: transparent;
-        color: rgba(27, 146, 73, 1);
-      }
-
-      .chip-efficiency {
-        background: transparent;
-        color: rgba(57, 102, 195, 1);
-      }
-
-      .chip-power {
-        background: transparent;
-        color: rgba(181, 104, 12, 1);
-      }
-
-      .chip-offline {
-        background: transparent;
-        color: rgba(165, 39, 45, 1);
       }
 
       .hud-online {
