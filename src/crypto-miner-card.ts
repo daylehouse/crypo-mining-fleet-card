@@ -550,6 +550,72 @@ export class CryptoMinerCard extends LitElement {
         top: 45.25%;
         left: 50%;
       }
+
+      @media (max-width: 640px) {
+        .card-title {
+          font-size: 0.7rem;
+          padding: 5px 10px;
+        }
+
+        .sensor-chip {
+          font-size: 0.8rem;
+          gap: 4px;
+          padding: 4px 6px;
+        }
+
+        .chip-icon {
+          font-size: 0.96rem;
+          --mdc-icon-size: 0.96rem;
+        }
+
+        .miners-title,
+        .fleet-power-title {
+          font-size: 1.03rem;
+          top: 58.5%;
+        }
+
+        .hud-online {
+          top: 64.5%;
+          left: 30%;
+        }
+
+        .hud-offline {
+          top: 70.5%;
+          left: 30%;
+        }
+
+        .hud-efficiency {
+          top: 64.5%;
+          left: 69%;
+        }
+
+        .hud-power {
+          top: 70.5%;
+          left: 69%;
+        }
+
+        .hud-efficiency .chip-value,
+        .hud-power .chip-value {
+          font-size: 0.76rem;
+        }
+
+        .hud-btc-rate,
+        .hud-bch-rate,
+        .hud-ltc-rate,
+        .hud-aleo-rate,
+        .hud-solo-pool-hashrate {
+          font-size: 0.69rem;
+          width: 24%;
+          line-height: 1.1;
+          gap: 3px;
+        }
+
+        .hud-solo-pool-hashrate {
+          width: 18%;
+          font-size: 0.71rem;
+          top: 45.5%;
+        }
+      }
     `;
   }
 }
