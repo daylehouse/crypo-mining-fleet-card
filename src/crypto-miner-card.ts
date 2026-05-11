@@ -17,12 +17,12 @@ export class CryptoMinerCard extends LitElement {
   }
 
   getCardSize(): number {
-    return 6;
+    return 5;
   }
 
   getGridOptions() {
     return {
-      rows: 6,
+      rows: 5,
       min_rows: 3,
       columns: 12
     };
@@ -102,7 +102,7 @@ export class CryptoMinerCard extends LitElement {
       .card-shell {
         position: relative;
         overflow: hidden;
-        aspect-ratio: 16 / 21;
+        aspect-ratio: 16 / 18;
       }
 
       .card-image {
