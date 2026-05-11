@@ -77,9 +77,11 @@ export class CryptoMinerCard extends LitElement {
       <ha-card>
         <div class="card-shell">
           <img class="card-image" src=${baseImage} alt="Crypto miner card image" />
-          <div class="overlay">
-            <div class="overlay-label">Online Miners</div>
-            <div class="overlay-value">${this._getOnlineMinersValue()}</div>
+          <div class="stage-layer">
+            <div class="overlay stage-item">
+              <div class="overlay-label">Online Miners</div>
+              <div class="overlay-value">${this._getOnlineMinersValue()}</div>
+            </div>
           </div>
         </div>
       </ha-card>
@@ -111,6 +113,17 @@ export class CryptoMinerCard extends LitElement {
         height: 100%;
         object-fit: cover;
         object-position: center 38%;
+      }
+
+      .stage-layer {
+        position: absolute;
+        inset: 0;
+        background: transparent;
+        pointer-events: none;
+      }
+
+      .stage-item {
+        pointer-events: auto;
       }
 
       .overlay {
