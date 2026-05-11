@@ -12,25 +12,44 @@ export declare class CryptoMinerCard extends LitElement {
     };
     static getStubConfig(): Omit<CryptoMinerCardConfig, "type">;
     static getConfigForm(): {
-        schema: {
+        schema: ({
+            name: string;
+            selector: {
+                text: {};
+                entity?: undefined;
+            };
+        } | {
             name: string;
             selector: {
                 entity: {};
+                text?: undefined;
             };
-        }[];
+        })[];
         computeLabel: (schema: {
             name: string;
-        }) => "Online Miners Entity" | "Energy Efficiency Entity" | "Power Entity" | "Miners Offline Entity" | undefined;
+        }) => "Card Title" | "Online Miners Entity" | "Energy Efficiency Entity" | "Power Entity" | "Miners Offline Entity" | undefined;
         computeHelper: (schema: {
             name: string;
-        }) => "Select the entity to display as Online Miners" | "Select the entity to display as Energy Efficiency" | "Select the entity to display as Power" | "Select the entity to display as Miners Offline" | undefined;
+        }) => "Optional title displayed at the top of the card" | "Select the entity to display as Online Miners" | "Select the entity to display as Energy Efficiency" | "Select the entity to display as Power" | "Select the entity to display as Miners Offline" | undefined;
     };
     private _getEntityState;
-    protected render(): import("lit").TemplateResult<1>;
+    private _getEntityStateWithUnit;
+    private _formatPowerState;
+    private _formatEfficiencyState;
+    protected render(): import("lit-html").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;
 }
 declare global {
     interface HTMLElementTagNameMap {
         "crypto-miner-card": CryptoMinerCard;
+    }
+    interface Window {
+        customCards?: Array<{
+            type: string;
+            name: string;
+            description: string;
+            preview: boolean;
+            documentationURL: string;
+        }>;
     }
 }

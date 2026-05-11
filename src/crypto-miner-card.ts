@@ -41,6 +41,10 @@ export class CryptoMinerCard extends LitElement {
     return {
       schema: [
         {
+          name: "title",
+          selector: { text: {} }
+        },
+        {
           name: "online_miners_entity",
           selector: { entity: {} }
         },
@@ -58,6 +62,9 @@ export class CryptoMinerCard extends LitElement {
         }
       ],
       computeLabel: (schema: { name: string }) => {
+        if (schema.name === "title") {
+          return "Card Title";
+        }
         if (schema.name === "online_miners_entity") {
           return "Online Miners Entity";
         }
@@ -73,6 +80,9 @@ export class CryptoMinerCard extends LitElement {
         return undefined;
       },
       computeHelper: (schema: { name: string }) => {
+        if (schema.name === "title") {
+          return "Optional title displayed at the top of the card";
+        }
         if (schema.name === "online_miners_entity") {
           return "Select the entity to display as Online Miners";
         }
@@ -103,13 +113,66 @@ export class CryptoMinerCard extends LitElement {
     return state;
   }
 
+  private _getEntityStateWithUnit(entityId?: string): string {
+    const state = this._getEntityState(entityId);
+    if (state === "--" || state === "n/a") {
+      return state;
+    }
+
+    if (!entityId) {
+      return state;
+    }
+
+    const unit = this.hass?.states?.[entityId]?.attributes?.unit_of_measurement;
+    if (typeof unit === "string" && unit.trim().length > 0) {
+      return `${state} ${unit}`;
+    }
+
+    return state;
+  }
+
+  private _formatPowerState(entityId?: string): string {
+    const state = this._getEntityState(entityId);
+    if (state === "--" || state === "n/a") {
+      return state;
+    }
+
+    const numericState = Number(state);
+    if (!Number.isFinite(numericState)) {
+      return this._getEntityStateWithUnit(entityId);
+    }
+
+    if (numericState >= 1000) {
+      const kiloWatts = numericState / 1000;
+      return `${kiloWatts.toFixed(1)} kW`;
+    }
+
+    return `${Math.round(numericState)} W`;
+  }
+
+  private _formatEfficiencyState(entityId?: string): string {
+    const state = this._getEntityState(entityId);
+    if (state === "--" || state === "n/a") {
+      return state;
+    }
+
+    const numericState = Number(state);
+    if (!Number.isFinite(numericState)) {
+      return this._getEntityStateWithUnit(entityId);
+    }
+
+    return `${numericState.toFixed(2)} J/TH`;
+  }
+
   protected render() {
+    const title = this._config?.title?.trim() || "Crypto Mining Fleet";
+
     return html`
       <ha-card>
         <div class="card-shell">
           <img class="card-image" src=${baseImage} alt="Crypto miner card image" />
           <div class="stage-layer">
-            <div class="positioning-overlay" aria-hidden="true"></div>
+            <div class="card-title stage-item">${title}</div>
 
             <div class="sensor-chip stage-item hud-online">
               <span class="chip-prefix chip-online">ONL</span>
@@ -121,17 +184,15 @@ export class CryptoMinerCard extends LitElement {
               <span class="chip-prefix chip-efficiency">EFF</span>
               <span class="chip-label">Energy Efficiency</span>
               <span class="chip-value"
-                >${this._getEntityState(this._config?.fleet_energy_efficiency_entity)}</span
+                >${this._formatEfficiencyState(this._config?.fleet_energy_efficiency_entity)}</span
               >
             </div>
 
             <div class="sensor-chip stage-item hud-power">
               <span class="chip-prefix chip-power">PWR</span>
               <span class="chip-label">Power</span>
-              <span class="chip-value">${this._getEntityState(this._config?.fleet_power_entity)}</span>
+              <span class="chip-value">${this._formatPowerState(this._config?.fleet_power_entity)}</span>
             </div>
-
-            <div class="title-label stage-item hud-power-title">Fleet Power</div>
 
             <div class="sensor-chip stage-item hud-offline">
               <span class="chip-prefix chip-offline">OFF</span>
@@ -183,18 +244,20 @@ export class CryptoMinerCard extends LitElement {
         z-index: 2;
       }
 
-      .positioning-overlay {
+      .card-title {
         position: absolute;
-        inset: 0;
-        z-index: 1;
-        pointer-events: none;
-        background-image:
-          linear-gradient(to right, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
-          linear-gradient(to right, transparent calc(50% - 1px), rgba(255, 184, 0, 0.8) 50%, transparent calc(50% + 1px)),
-          linear-gradient(to bottom, transparent calc(50% - 1px), rgba(255, 184, 0, 0.8) 50%, transparent calc(50% + 1px));
-        background-size: 10% 10%, 10% 10%, 100% 100%, 100% 100%;
-        background-position: 0 0, 0 0, 0 0, 0 0;
+        top: 9%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 999px;
+        padding: 6px 12px;
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        background: rgba(10, 12, 18, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.2);
       }
 
       .sensor-chip {
@@ -230,16 +293,6 @@ export class CryptoMinerCard extends LitElement {
         font-weight: 700;
       }
 
-      .title-label {
-        position: absolute;
-        color: #fff;
-        font-size: 0.76rem;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-        transform: translate(-50%, -50%);
-      }
-
       .chip-online {
         background: rgba(27, 146, 73, 0.9);
       }
@@ -271,11 +324,6 @@ export class CryptoMinerCard extends LitElement {
         left: 70%;
       }
 
-      .hud-power-title {
-        top: 60%;
-        left: 75%;
-      }
-
       .hud-offline {
         top: 73%;
         left: 34%;
@@ -288,13 +336,23 @@ declare global {
   interface HTMLElementTagNameMap {
     "crypto-miner-card": CryptoMinerCard;
   }
+
+  interface Window {
+    customCards?: Array<{
+      type: string;
+      name: string;
+      description: string;
+      preview: boolean;
+      documentationURL: string;
+    }>;
+  }
 }
 
-console.info(`%c  CRYPTO-MINER-CARD  %c  v0.1.0  `, "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
+console.info("%c  CRYPTO-MINER-CARD  %c  v0.1.0  ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
 
 // Register the card with Home Assistant
-(window as any).customCards = (window as any).customCards || [];
-(window as any).customCards.push({
+window.customCards = window.customCards || [];
+window.customCards.push({
   type: "crypto-miner-card",
   name: "Crypto Miner Card",
   description: "Custom card for monitoring crypto miner fleet",

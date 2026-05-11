@@ -8,6 +8,6 @@ export interface CryptoMinerCardConfig {
 }
 
 export interface HomeAssistantLike {
-  states: Record<string, { state: string }>;
+  states: Record<string, { state: string; attributes?: Record<string, unknown> }>;
   entities: Record<string, unknown>;
 }

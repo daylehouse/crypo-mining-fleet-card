@@ -47,15 +47,19 @@ type: custom:crypto-miner-card
 title: Crypto Mining Fleet
 online_miners_entity: sensor.online_miners
 offline_miners_entity: sensor.offline_miners
+fleet_power_entity: sensor.fleet_power
+fleet_energy_efficiency_entity: sensor.fleet_energy_efficiency
 ```
 
 ### Configuration Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `title` | string | "Crypto Mining Fleet" | Card title |
+| `title` | string | "Crypto Mining Fleet" | Optional title displayed in the top badge |
 | `online_miners_entity` | string | - | Entity ID for online miners sensor |
 | `offline_miners_entity` | string | - | Entity ID for offline miners sensor |
+| `fleet_power_entity` | string | - | Entity ID for fleet power sensor |
+| `fleet_energy_efficiency_entity` | string | - | Entity ID for fleet energy efficiency sensor |
 
 ## Development
 
@@ -99,10 +103,9 @@ npm run lint
 .
 ├── src/
 │   ├── crypto-miner-card.ts    # Main card component
-│   ├── editor.ts               # Configuration UI editor
 │   ├── types.ts                # TypeScript type definitions
 │   ├── assets.d.ts             # Asset type declarations
-│   └── base.jpg                # Background image
+│   └── baselayer.png           # Background image
 ├── dist/                       # Compiled output (distribution)
 ├── .github/workflows/          # CI/CD workflows
 │   ├── hacs.yml               # HACS validation
