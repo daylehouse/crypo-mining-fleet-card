@@ -34,7 +34,7 @@ export class CryptoMinerCard extends LitElement {
   protected render() {
     return html`
       <ha-card>
-        <div class="card-content" style=${`background-image: url('${baseImage}');`}></div>
+        <img class="card-image" src=${baseImage} alt="Crypto miner card image" />
       </ha-card>
     `;
   }
@@ -48,17 +48,16 @@ export class CryptoMinerCard extends LitElement {
       }
 
       ha-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         overflow: hidden;
-        margin: 0;
       }
 
-      .card-content {
-        width: 100%;
-        aspect-ratio: 3 / 4;
-        background-size: cover;
-        background-position: center top;
-        background-repeat: no-repeat;
-        background-color: #000;
+      .card-image {
+        display: block;
+        max-width: 100%;
+        max-height: 100%;
       }
     `;
   }
