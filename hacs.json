@@ -2,7 +2,7 @@
   "name": "Crypto Mining Fleet Card",
   "codeowners": ["@daylehouse"],
   "content_in_root": false,
-  "filename": "crypo-mining-fleet-card.js",
+  "filename": "crypo-mining-fleet-card-v2.js",
   "homeassistant": "2024.1.0",
   "hacs": "1.25.0"
 }

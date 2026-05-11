@@ -5,7 +5,7 @@ module.exports = {
   mode: 'production',
   entry: './src/crypto-miner-card.ts',
   output: {
-    filename: 'crypo-mining-fleet-card.js',
+    filename: 'crypo-mining-fleet-card-v2.js',
     path: path.resolve(__dirname, 'dist'),
     library: {
       type: 'module'
