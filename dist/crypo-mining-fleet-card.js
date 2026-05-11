@@ -19,7 +19,7 @@ var t={d:(e,s)=>{for(var i in s)t.o(s,i)&&!t.o(e,i)&&Object.defineProperty(e,i,{
         width: 100%;
         aspect-ratio: 3 / 4;
         background-size: cover;
-        background-position: -25% top;
+        background-position: center top;
         background-repeat: no-repeat;
         background-color: #000;
       }
