@@ -38,7 +38,7 @@ module.exports = {
         exclude: /node_modules/
       },
       {
-        test: /\.(png|jpe?g|gif|webp|ttf)$/i,
+        test: /\.(png|jpe?g|gif|webp)$/i,
         type: 'asset/resource',
         parser: {
           dataUrlCondition: {
@@ -48,6 +48,10 @@ module.exports = {
         generator: {
           filename: 'assets/[name][ext]'
         }
+      },
+      {
+        test: /\.ttf$/i,
+        type: 'asset/inline'
       }
     ]
   },
