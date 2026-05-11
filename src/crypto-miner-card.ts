@@ -49,7 +49,7 @@ export class CryptoMinerCard extends LitElement {
         width: 100%;
         aspect-ratio: 3 / 4;
         background-size: cover;
-        background-position: center center;
+        background-position: center top;
         background-repeat: no-repeat;
         background-color: #000;
       }
