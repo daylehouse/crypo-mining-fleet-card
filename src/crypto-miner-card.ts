@@ -67,32 +67,9 @@ export class CryptoMinerCard extends LitElement {
       return html`<p>Configuration error</p>`;
     }
 
-    const onlineMinersState = this._config.online_miners_entity
-      ? this.hass.states[this._config.online_miners_entity]?.state ?? "N/A"
-      : "N/A";
-
-    const offlineMinersState = this._config.offline_miners_entity
-      ? this.hass.states[this._config.offline_miners_entity]?.state ?? "N/A"
-      : "N/A";
-
     return html`
       <ha-card>
-        <div class="card-content" style=${`background-image: linear-gradient(rgba(9, 18, 29, 0.75), rgba(9, 18, 29, 0.75)), url('${baseImage}');`}>
-          <div class="stage">
-            <div class="card-header">
-              <h1 class="card-title">${this._config.title || "Crypto Mining Fleet"}</h1>
-            </div>
-            <div class="miner-stats">
-              <div class="stat-box online">
-                <div class="stat-label">Online Miners</div>
-                <div class="stat-value">${onlineMinersState}</div>
-              </div>
-              <div class="stat-box offline">
-                <div class="stat-label">Offline Miners</div>
-                <div class="stat-value">${offlineMinersState}</div>
-              </div>
-            </div>
-          </div>
+        <div class="card-content" style=${`background-image: url('${baseImage}');`}>
         </div>
       </ha-card>
     `;
