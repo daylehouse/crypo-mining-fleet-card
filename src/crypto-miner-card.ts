@@ -109,6 +109,8 @@ export class CryptoMinerCard extends LitElement {
         <div class="card-shell">
           <img class="card-image" src=${baseImage} alt="Crypto miner card image" />
           <div class="stage-layer">
+            <div class="positioning-overlay" aria-hidden="true"></div>
+
             <div class="sensor-chip stage-item hud-online">
               <span class="chip-prefix chip-online">ONL</span>
               <span class="chip-label">Online Miners</span>
@@ -176,6 +178,21 @@ export class CryptoMinerCard extends LitElement {
 
       .stage-item {
         pointer-events: auto;
+        z-index: 2;
+      }
+
+      .positioning-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background-image:
+          linear-gradient(to right, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+          linear-gradient(to right, transparent calc(50% - 1px), rgba(255, 184, 0, 0.8) 50%, transparent calc(50% + 1px)),
+          linear-gradient(to bottom, transparent calc(50% - 1px), rgba(255, 184, 0, 0.8) 50%, transparent calc(50% + 1px));
+        background-size: 10% 10%, 10% 10%, 100% 100%, 100% 100%;
+        background-position: 0 0, 0 0, 0 0, 0 0;
       }
 
       .sensor-chip {
