@@ -16,13 +16,13 @@ export class CryptoMinerCard extends LitElement {
   }
 
   getCardSize(): number {
-    return 12;
+    return 8;
   }
 
   getGridOptions() {
     return {
-      rows: 12,
-      min_rows: 6,
+      rows: 8,
+      min_rows: 4,
       columns: 12
     };
   }
@@ -49,15 +49,16 @@ export class CryptoMinerCard extends LitElement {
 
       ha-card {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
+        padding: 0;
         overflow: hidden;
       }
 
       .card-image {
         display: block;
-        max-width: 100%;
-        max-height: 100%;
+        width: 100%;
+        height: auto;
       }
     `;
   }
