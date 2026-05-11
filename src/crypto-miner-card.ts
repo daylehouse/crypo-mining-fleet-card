@@ -62,10 +62,10 @@ export class CryptoMinerCard extends LitElement {
           return "Online Miners Entity";
         }
         if (schema.name === "fleet_energy_efficiency_entity") {
-          return "Fleet Energy Efficiency Entity";
+          return "Energy Efficiency Entity";
         }
         if (schema.name === "fleet_power_entity") {
-          return "Fleet Power Entity";
+          return "Power Entity";
         }
         if (schema.name === "offline_miners_entity") {
           return "Miners Offline Entity";
@@ -77,10 +77,10 @@ export class CryptoMinerCard extends LitElement {
           return "Select the entity to display as Online Miners";
         }
         if (schema.name === "fleet_energy_efficiency_entity") {
-          return "Select the entity to display as Fleet Energy Efficiency";
+          return "Select the entity to display as Energy Efficiency";
         }
         if (schema.name === "fleet_power_entity") {
-          return "Select the entity to display as Fleet Power";
+          return "Select the entity to display as Power";
         }
         if (schema.name === "offline_miners_entity") {
           return "Select the entity to display as Miners Offline";
@@ -119,7 +119,7 @@ export class CryptoMinerCard extends LitElement {
 
             <div class="sensor-chip stage-item hud-efficiency">
               <span class="chip-prefix chip-efficiency">EFF</span>
-              <span class="chip-label">Fleet Energy Efficiency</span>
+              <span class="chip-label">Energy Efficiency</span>
               <span class="chip-value"
                 >${this._getEntityState(this._config?.fleet_energy_efficiency_entity)}</span
               >
@@ -127,9 +127,11 @@ export class CryptoMinerCard extends LitElement {
 
             <div class="sensor-chip stage-item hud-power">
               <span class="chip-prefix chip-power">PWR</span>
-              <span class="chip-label">Fleet Power</span>
+              <span class="chip-label">Power</span>
               <span class="chip-value">${this._getEntityState(this._config?.fleet_power_entity)}</span>
             </div>
+
+            <div class="title-label stage-item hud-power-title">Fleet Power</div>
 
             <div class="sensor-chip stage-item hud-offline">
               <span class="chip-prefix chip-offline">OFF</span>
@@ -203,7 +205,6 @@ export class CryptoMinerCard extends LitElement {
         white-space: nowrap;
         background: transparent;
         color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.25);
         border-radius: 8px;
         padding: 6px 8px;
         font-size: 0.75rem;
@@ -218,7 +219,6 @@ export class CryptoMinerCard extends LitElement {
         letter-spacing: 0.04em;
         font-weight: 700;
         color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.2);
       }
 
       .chip-label {
@@ -228,6 +228,16 @@ export class CryptoMinerCard extends LitElement {
       .chip-value {
         margin-left: 2px;
         font-weight: 700;
+      }
+
+      .title-label {
+        position: absolute;
+        color: #fff;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        transform: translate(-50%, -50%);
       }
 
       .chip-online {
@@ -259,6 +269,11 @@ export class CryptoMinerCard extends LitElement {
       .hud-power {
         top: 72%;
         left: 70%;
+      }
+
+      .hud-power-title {
+        top: 60%;
+        left: 75%;
       }
 
       .hud-offline {
