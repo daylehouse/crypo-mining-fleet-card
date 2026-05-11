@@ -56,7 +56,12 @@ export class CryptoMinerCard extends LitElement {
       online_miners_entity: "sensor.online_miners",
       offline_miners_entity: "sensor.miners_offline",
       fleet_power_entity: "sensor.fleet_power",
-      fleet_energy_efficiency_entity: "sensor.fleet_energy_efficiency"
+      fleet_energy_efficiency_entity: "sensor.fleet_energy_efficiency",
+      btc_rate_entity: "sensor.btc_rate",
+      bch_rate_entity: "sensor.bch_rate",
+      ltc_rate_entity: "sensor.ltc_rate",
+      aleo_rate_entity: "sensor.aleo_rate",
+      solo_pool_hashrate_entity: "sensor.solo_pool_hashrate"
     };
   }
 
@@ -82,6 +87,26 @@ export class CryptoMinerCard extends LitElement {
         {
           name: "offline_miners_entity",
           selector: { entity: {} }
+        },
+        {
+          name: "btc_rate_entity",
+          selector: { entity: {} }
+        },
+        {
+          name: "bch_rate_entity",
+          selector: { entity: {} }
+        },
+        {
+          name: "ltc_rate_entity",
+          selector: { entity: {} }
+        },
+        {
+          name: "aleo_rate_entity",
+          selector: { entity: {} }
+        },
+        {
+          name: "solo_pool_hashrate_entity",
+          selector: { entity: {} }
         }
       ],
       computeLabel: (schema: { name: string }) => {
@@ -100,6 +125,21 @@ export class CryptoMinerCard extends LitElement {
         if (schema.name === "offline_miners_entity") {
           return "Miners Offline Entity";
         }
+        if (schema.name === "btc_rate_entity") {
+          return "BTC Rate Entity";
+        }
+        if (schema.name === "bch_rate_entity") {
+          return "BCH Rate Entity";
+        }
+        if (schema.name === "ltc_rate_entity") {
+          return "LTC Rate Entity";
+        }
+        if (schema.name === "aleo_rate_entity") {
+          return "ALEO Rate Entity";
+        }
+        if (schema.name === "solo_pool_hashrate_entity") {
+          return "Solo Pool Hashrate Entity";
+        }
         return undefined;
       },
       computeHelper: (schema: { name: string }) => {
@@ -117,6 +157,21 @@ export class CryptoMinerCard extends LitElement {
         }
         if (schema.name === "offline_miners_entity") {
           return "Select the entity to display as Miners Offline";
+        }
+        if (schema.name === "btc_rate_entity") {
+          return "Select the entity to display as BTC Rate";
+        }
+        if (schema.name === "bch_rate_entity") {
+          return "Select the entity to display as BCH Rate";
+        }
+        if (schema.name === "ltc_rate_entity") {
+          return "Select the entity to display as LTC Rate";
+        }
+        if (schema.name === "aleo_rate_entity") {
+          return "Select the entity to display as ALEO Rate";
+        }
+        if (schema.name === "solo_pool_hashrate_entity") {
+          return "Select the entity to display as Solo Pool Hashrate";
         }
         return undefined;
       }
@@ -198,30 +253,65 @@ export class CryptoMinerCard extends LitElement {
             <div class="card-title stage-item">${title}</div>
 
             <div class="sensor-chip stage-item hud-online">
-              <span class="chip-icon">⚡</span>
-              <span class="chip-label">Online Miners</span>
+              <ha-icon class="chip-icon chip-icon-online" icon="mdi:account-hard-hat"></ha-icon>
+              <span class="chip-label">Online:</span>
               <span class="chip-value">${this._getEntityState(this._config?.online_miners_entity)}</span>
             </div>
 
             <div class="sensor-chip stage-item hud-efficiency">
-              <span class="chip-icon">🍃</span>
+              <ha-icon class="chip-icon chip-icon-efficiency" icon="mdi:leaf"></ha-icon>
               <span class="chip-label">Efficiency</span>
-              <span class="chip-value"
-                >${this._formatEfficiencyState(this._config?.fleet_energy_efficiency_entity)}</span
-              >
+              <span class="chip-value">${this._formatEfficiencyState(this._config?.fleet_energy_efficiency_entity)}</span>
             </div>
 
             <div class="sensor-chip stage-item hud-power">
-              <span class="chip-icon">⚡</span>
+              <ha-icon class="chip-icon chip-icon-power" icon="mdi:power"></ha-icon>
               <span class="chip-label">Total</span>
               <span class="chip-value">${this._formatPowerState(this._config?.fleet_power_entity)}</span>
             </div>
 
             <div class="sensor-chip stage-item hud-offline">
-              <span class="chip-label">Miners Offline</span>
+              <ha-icon class="chip-icon chip-icon-offline" icon="mdi:account-hard-hat"></ha-icon>
+              <span class="chip-label">Offline:</span>
               <span class="chip-value">${this._getEntityState(this._config?.offline_miners_entity)}</span>
             </div>
 
+            <div class="sensor-chip stage-item hud-btc-rate">
+              <div class="chip-rate-head">
+                <span class="chip-label">BTC Hashrate</span>
+              </div>
+              <span class="chip-value">${this._getEntityStateWithUnit(this._config?.btc_rate_entity)}</span>
+            </div>
+
+            <div class="sensor-chip stage-item hud-bch-rate">
+              <div class="chip-rate-head">
+                <span class="chip-label">BCH Hashrate</span>
+              </div>
+              <span class="chip-value">${this._getEntityStateWithUnit(this._config?.bch_rate_entity)}</span>
+            </div>
+
+            <div class="sensor-chip stage-item hud-ltc-rate">
+              <div class="chip-rate-head">
+                <span class="chip-label">LTC Hashrate</span>
+              </div>
+              <span class="chip-value">${this._getEntityStateWithUnit(this._config?.ltc_rate_entity)}</span>
+            </div>
+
+            <div class="sensor-chip stage-item hud-aleo-rate">
+              <div class="chip-rate-head">
+                <span class="chip-label">ALEO Hashrate</span>
+              </div>
+              <span class="chip-value">${this._getEntityStateWithUnit(this._config?.aleo_rate_entity)}</span>
+            </div>
+
+            <div class="sensor-chip stage-item hud-solo-pool-hashrate">
+              <div class="chip-rate-head">
+                <span class="chip-label">Solo Pool</span>
+              </div>
+              <span class="chip-value">${this._getEntityStateWithUnit(this._config?.solo_pool_hashrate_entity)}</span>
+            </div>
+
+            <div class="miners-title stage-item">Miners</div>
             <div class="fleet-power-title stage-item">Fleet Power</div>
           </div>
         </div>
@@ -296,7 +386,7 @@ export class CryptoMinerCard extends LitElement {
         color: #fff;
         border-radius: 8px;
         padding: 6px 8px;
-        font-size: 0.7725rem;
+        font-size: 0.927rem;
         line-height: 1;
         transform: translate(-50%, -50%);
         border: none;
@@ -308,17 +398,82 @@ export class CryptoMinerCard extends LitElement {
       }
 
       .chip-icon {
-        font-size: 0.85rem;
+        font-size: 1.105rem;
+        --mdc-icon-size: 1.105rem;
         line-height: 1;
+      }
+
+      .chip-icon-online {
+        color: #39ff14;
+      }
+
+      .chip-icon-offline {
+        color: #ff2bd6;
+      }
+
+      .chip-icon-efficiency {
+        color: #00f5ff;
+      }
+
+      .chip-icon-power {
+        color: #f8ff00;
+      }
+
+      .hud-btc-rate,
+      .hud-bch-rate,
+      .hud-ltc-rate,
+      .hud-aleo-rate,
+      .hud-solo-pool-hashrate {
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        width: 20%;
+        padding: 0;
+        font-size: 0.74rem;
+        line-height: 1.15;
+        text-align: center;
+      }
+
+      .chip-rate-head {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .hud-btc-rate .chip-value,
+      .hud-bch-rate .chip-value,
+      .hud-ltc-rate .chip-value,
+      .hud-aleo-rate .chip-value,
+      .hud-solo-pool-hashrate .chip-value {
+        margin-left: 0;
+        width: 100%;
+        text-align: center;
       }
 
       .fleet-power-title {
         position: absolute;
-        top: 56%;
-        left: 70%;
+        top: 59%;
+        left: 71%;
         transform: translate(-50%, -50%);
         color: #fff;
-        font-size: 0.945rem;
+        font-size: 1.134rem;
+        font-family: "AlienEncountersBold", sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        background: transparent;
+        border: none;
+        white-space: nowrap;
+      }
+
+      .miners-title {
+        position: absolute;
+        top: 59%;
+        left: 30%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-size: 1.134rem;
         font-family: "AlienEncountersBold", sans-serif;
         font-weight: 700;
         letter-spacing: 0.04em;
@@ -330,28 +485,54 @@ export class CryptoMinerCard extends LitElement {
 
       .chip-value {
         margin-left: 2px;
+        text-align: left;
         font-family: "AlienEncountersBold", sans-serif;
         font-weight: 700;
       }
 
       .hud-online {
-        top: 20%;
-        left: 24%;
+        top: 64%;
+        left: 29%;
       }
 
       .hud-efficiency {
-        top: 69%;
+        top: 64%;
         left: 70%;
       }
 
       .hud-power {
-        top: 67%;
+        top: 70%;
         left: 70%;
       }
 
       .hud-offline {
-        top: 73%;
-        left: 34%;
+        top: 70%;
+        left: 29%;
+      }
+
+      .hud-btc-rate {
+        top: 42.5%;
+        left: 23%;
+      }
+
+      .hud-bch-rate {
+        top: 48%;
+        left: 23%;
+      }
+
+      .hud-ltc-rate {
+        top: 42.5%;
+        left: 77%;
+      }
+
+      .hud-aleo-rate {
+        top: 48%;
+        left: 77%;
+      }
+
+      .hud-solo-pool-hashrate {
+        top: 45.25%;
+        left: 50%;
       }
     `;
   }

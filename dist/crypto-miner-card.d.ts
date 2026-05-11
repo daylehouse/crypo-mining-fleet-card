@@ -27,10 +27,10 @@ export declare class CryptoMinerCard extends LitElement {
         })[];
         computeLabel: (schema: {
             name: string;
-        }) => "Card Title" | "Online Miners Entity" | "Energy Efficiency Entity" | "Power Entity" | "Miners Offline Entity" | undefined;
+        }) => "Card Title" | "Online Miners Entity" | "Energy Efficiency Entity" | "Power Entity" | "Miners Offline Entity" | "BTC Rate Entity" | "BCH Rate Entity" | "LTC Rate Entity" | "ALEO Rate Entity" | "Solo Pool Hashrate Entity" | undefined;
         computeHelper: (schema: {
             name: string;
-        }) => "Optional title displayed at the top of the card" | "Select the entity to display as Online Miners" | "Select the entity to display as Energy Efficiency" | "Select the entity to display as Power" | "Select the entity to display as Miners Offline" | undefined;
+        }) => "Optional title displayed at the top of the card" | "Select the entity to display as Online Miners" | "Select the entity to display as Energy Efficiency" | "Select the entity to display as Power" | "Select the entity to display as Miners Offline" | "Select the entity to display as BTC Rate" | "Select the entity to display as BCH Rate" | "Select the entity to display as LTC Rate" | "Select the entity to display as ALEO Rate" | "Select the entity to display as Solo Pool Hashrate" | undefined;
     };
     private _getEntityState;
     private _getEntityStateWithUnit;
