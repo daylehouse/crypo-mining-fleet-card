@@ -1,26 +1,9 @@
 import { LitElement } from "lit";
-import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
+import { CryptoMinerCardConfig } from "./types";
 export declare class CryptoMinerCard extends LitElement {
-    hass: HomeAssistantLike;
+    hass: unknown;
     private _config?;
     setConfig(config: CryptoMinerCardConfig): void;
-    static getConfigForm(): {
-        schema: ({
-            name: string;
-            selector: {
-                text: {};
-                entity?: undefined;
-            };
-        } | {
-            name: string;
-            selector: {
-                entity: {
-                    domain: string;
-                };
-                text?: undefined;
-            };
-        })[];
-    };
     getCardSize(): number;
     getGridOptions(): {
         rows: number;
