@@ -429,7 +429,7 @@ export class CryptoMinerCard extends LitElement {
         gap: 4px;
         width: 20%;
         padding: 0;
-        font-size: 0.74rem;
+        font-size: 0.751rem;
         line-height: 1.15;
         text-align: center;
       }
@@ -451,13 +451,29 @@ export class CryptoMinerCard extends LitElement {
         text-align: center;
       }
 
+      .hud-btc-rate .chip-label {
+        color: #ff8c00;
+      }
+
+      .hud-bch-rate .chip-label {
+        color: #39ff14;
+      }
+
+      .hud-ltc-rate .chip-label {
+        color: #00f5ff;
+      }
+
+      .hud-aleo-rate .chip-label {
+        color: #f8ff00;
+      }
+
       .fleet-power-title {
         position: absolute;
         top: 59%;
         left: 71%;
         transform: translate(-50%, -50%);
         color: #fff;
-        font-size: 1.134rem;
+        font-size: 1.151rem;
         font-family: "AlienEncountersBold", sans-serif;
         font-weight: 700;
         letter-spacing: 0.04em;
@@ -473,7 +489,7 @@ export class CryptoMinerCard extends LitElement {
         left: 30%;
         transform: translate(-50%, -50%);
         color: #fff;
-        font-size: 1.134rem;
+        font-size: 1.151rem;
         font-family: "AlienEncountersBold", sans-serif;
         font-weight: 700;
         letter-spacing: 0.04em;
