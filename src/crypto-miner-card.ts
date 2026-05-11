@@ -1,6 +1,6 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import baseImage from "./baseimage.PNG";
+import baseImage from "./baseimage.webp";
 import { CryptoMinerCardConfig } from "./types";
 
 @customElement("crypto-miner-card")
@@ -46,10 +46,10 @@ export class CryptoMinerCard extends LitElement {
       }
 
       .card-content {
-        width: 100%;
+        width: 99%;
         aspect-ratio: 3 / 4;
         background-size: cover;
-        background-position: center top;
+        background-position: left top;
         background-repeat: no-repeat;
         background-color: #000;
       }
