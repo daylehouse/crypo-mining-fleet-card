@@ -10,7 +10,7 @@ if (!fs.existsSync(inputPath)) {
 }
 
 const source = fs.readFileSync(inputPath);
-const compressed = zlib.gzipSync(source, { level: 9 });
+const compressed = zlib.gzipSync(source, { level: 9, mtime: 0 });
 fs.writeFileSync(outputPath, compressed);
 
 console.log(`Created ${path.basename(outputPath)} (${compressed.length} bytes)`);
