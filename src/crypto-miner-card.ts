@@ -112,7 +112,7 @@ export class CryptoMinerCard extends LitElement {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        object-position: center 38%;
+        object-position: center 35%;
       }
 
       .stage-layer {

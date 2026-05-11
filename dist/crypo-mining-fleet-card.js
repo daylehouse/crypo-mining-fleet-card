@@ -34,7 +34,7 @@ var t={d:(e,s)=>{for(var i in s)t.o(s,i)&&!t.o(e,i)&&Object.defineProperty(e,i,{
         width: 100%;
         height: 100%;
         object-fit: cover;
-        object-position: center 38%;
+        object-position: center 35%;
       }
 
       .stage-layer {

@@ -71,6 +71,14 @@ npm install
 npm run build
 ```
 
+### Build Checklist
+
+Run this before pushing changes to ensure generated artifacts are up to date:
+
+```bash
+npm run build:checklist
+```
+
 ### Development Mode
 
 ```bash
