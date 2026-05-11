@@ -110,18 +110,20 @@ export class CryptoMinerCard extends LitElement {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        object-position: center 35%;
+        object-position: center 45%;
       }
 
       .overlay {
         position: absolute;
-        top: 12px;
-        left: 12px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         background: rgba(0, 0, 0, 0.7);
         color: #fff;
         border-radius: 8px;
         padding: 8px 10px;
         line-height: 1.2;
+        text-align: center;
       }
 
       .overlay-label {
