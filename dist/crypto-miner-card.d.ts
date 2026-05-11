@@ -1,7 +1,7 @@
 import { LitElement } from "lit";
-import { CryptoMinerCardConfig } from "./types";
+import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
 export declare class CryptoMinerCard extends LitElement {
-    hass: unknown;
+    hass?: HomeAssistantLike;
     private _config?;
     setConfig(config: CryptoMinerCardConfig): void;
     getCardSize(): number;
@@ -11,6 +11,22 @@ export declare class CryptoMinerCard extends LitElement {
         columns: number;
     };
     static getStubConfig(): Omit<CryptoMinerCardConfig, "type">;
+    static getConfigForm(): {
+        schema: {
+            name: string;
+            required: boolean;
+            selector: {
+                entity: {};
+            };
+        }[];
+        computeLabel: (schema: {
+            name: string;
+        }) => "Online Miners Entity" | undefined;
+        computeHelper: (schema: {
+            name: string;
+        }) => "Select the entity to display as Online Miners" | undefined;
+    };
+    private _getOnlineMinersValue;
     protected render(): import("lit").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;
 }

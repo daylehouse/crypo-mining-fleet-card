@@ -1,17 +1,18 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import baseImage from "./baselayer.png";
-import { CryptoMinerCardConfig } from "./types";
+import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
 
 @customElement("crypto-miner-card")
 export class CryptoMinerCard extends LitElement {
-  @property({ attribute: false }) public hass: unknown;
+  @property({ attribute: false }) public hass?: HomeAssistantLike;
   private _config?: CryptoMinerCardConfig;
 
   setConfig(config: CryptoMinerCardConfig) {
-    if (!config) {
+    if (!config || typeof config !== "object" || Array.isArray(config)) {
       throw new Error("Invalid configuration");
     }
+
     this._config = config;
   }
 
@@ -28,13 +29,59 @@ export class CryptoMinerCard extends LitElement {
   }
 
   static getStubConfig(): Omit<CryptoMinerCardConfig, "type"> {
-    return {};
+    return {
+      online_miners_entity: "sensor.online_miners"
+    };
+  }
+
+  static getConfigForm() {
+    return {
+      schema: [
+        {
+          name: "online_miners_entity",
+          required: true,
+          selector: { entity: {} }
+        }
+      ],
+      computeLabel: (schema: { name: string }) => {
+        if (schema.name === "online_miners_entity") {
+          return "Online Miners Entity";
+        }
+        return undefined;
+      },
+      computeHelper: (schema: { name: string }) => {
+        if (schema.name === "online_miners_entity") {
+          return "Select the entity to display as Online Miners";
+        }
+        return undefined;
+      }
+    };
+  }
+
+  private _getOnlineMinersValue(): string {
+    const entityId = this._config?.online_miners_entity;
+    if (!entityId) {
+      return "Select entity in card editor";
+    }
+
+    const state = this.hass?.states?.[entityId]?.state;
+    if (state === undefined || state === null) {
+      return "Entity unavailable";
+    }
+
+    return state;
   }
 
   protected render() {
     return html`
       <ha-card>
-        <img class="card-image" src=${baseImage} alt="Crypto miner card image" />
+        <div class="card-shell">
+          <img class="card-image" src=${baseImage} alt="Crypto miner card image" />
+          <div class="overlay">
+            <div class="overlay-label">Online Miners</div>
+            <div class="overlay-value">${this._getOnlineMinersValue()}</div>
+          </div>
+        </div>
       </ha-card>
     `;
   }
@@ -48,17 +95,39 @@ export class CryptoMinerCard extends LitElement {
       }
 
       ha-card {
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
         padding: 0;
         overflow: hidden;
+      }
+
+      .card-shell {
+        position: relative;
       }
 
       .card-image {
         display: block;
         width: 100%;
         height: auto;
+      }
+
+      .overlay {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #fff;
+        border-radius: 8px;
+        padding: 8px 10px;
+        line-height: 1.2;
+      }
+
+      .overlay-label {
+        font-size: 0.7rem;
+        opacity: 0.85;
+      }
+
+      .overlay-value {
+        font-size: 1rem;
+        font-weight: 700;
       }
     `;
   }
