@@ -32,18 +32,20 @@ var t={d:(e,s)=>{for(var i in s)t.o(s,i)&&!t.o(e,i)&&Object.defineProperty(e,i,{
         width: 100%;
         height: 100%;
         object-fit: cover;
-        object-position: center top;
+        object-position: center 60%;
       }
 
       .overlay {
         position: absolute;
-        top: 12px;
-        left: 12px;
+        top: 75%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         background: rgba(0, 0, 0, 0.7);
         color: #fff;
         border-radius: 8px;
         padding: 8px 10px;
         line-height: 1.2;
+        text-align: center;
       }
 
       .overlay-label {

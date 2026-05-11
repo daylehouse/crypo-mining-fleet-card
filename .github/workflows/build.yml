@@ -27,6 +27,9 @@ jobs:
       
       - name: Build
         run: npm run build
+
+      - name: Verify dist is up to date
+        run: npm run verify:dist
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
