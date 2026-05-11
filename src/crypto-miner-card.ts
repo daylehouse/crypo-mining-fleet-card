@@ -201,9 +201,9 @@ export class CryptoMinerCard extends LitElement {
         align-items: center;
         gap: 6px;
         white-space: nowrap;
-        background: rgba(0, 0, 0, 0.72);
+        background: transparent;
         color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.25);
         border-radius: 8px;
         padding: 6px 8px;
         font-size: 0.75rem;
@@ -257,7 +257,7 @@ export class CryptoMinerCard extends LitElement {
       }
 
       .hud-power {
-        top: 52%;
+        top: 72%;
         left: 70%;
       }
 
