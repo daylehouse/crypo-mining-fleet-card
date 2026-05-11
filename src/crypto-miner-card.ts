@@ -30,7 +30,10 @@ export class CryptoMinerCard extends LitElement {
 
   static getStubConfig(): Omit<CryptoMinerCardConfig, "type"> {
     return {
-      online_miners_entity: "sensor.online_miners"
+      online_miners_entity: "sensor.online_miners",
+      offline_miners_entity: "sensor.miners_offline",
+      fleet_power_entity: "sensor.fleet_power",
+      fleet_energy_efficiency_entity: "sensor.fleet_energy_efficiency"
     };
   }
 
@@ -39,7 +42,18 @@ export class CryptoMinerCard extends LitElement {
       schema: [
         {
           name: "online_miners_entity",
-          required: true,
+          selector: { entity: {} }
+        },
+        {
+          name: "fleet_energy_efficiency_entity",
+          selector: { entity: {} }
+        },
+        {
+          name: "fleet_power_entity",
+          selector: { entity: {} }
+        },
+        {
+          name: "offline_miners_entity",
           selector: { entity: {} }
         }
       ],
@@ -47,26 +61,43 @@ export class CryptoMinerCard extends LitElement {
         if (schema.name === "online_miners_entity") {
           return "Online Miners Entity";
         }
+        if (schema.name === "fleet_energy_efficiency_entity") {
+          return "Fleet Energy Efficiency Entity";
+        }
+        if (schema.name === "fleet_power_entity") {
+          return "Fleet Power Entity";
+        }
+        if (schema.name === "offline_miners_entity") {
+          return "Miners Offline Entity";
+        }
         return undefined;
       },
       computeHelper: (schema: { name: string }) => {
         if (schema.name === "online_miners_entity") {
           return "Select the entity to display as Online Miners";
         }
+        if (schema.name === "fleet_energy_efficiency_entity") {
+          return "Select the entity to display as Fleet Energy Efficiency";
+        }
+        if (schema.name === "fleet_power_entity") {
+          return "Select the entity to display as Fleet Power";
+        }
+        if (schema.name === "offline_miners_entity") {
+          return "Select the entity to display as Miners Offline";
+        }
         return undefined;
       }
     };
   }
 
-  private _getOnlineMinersValue(): string {
-    const entityId = this._config?.online_miners_entity;
+  private _getEntityState(entityId?: string): string {
     if (!entityId) {
-      return "Select entity in card editor";
+      return "--";
     }
 
     const state = this.hass?.states?.[entityId]?.state;
     if (state === undefined || state === null) {
-      return "Entity unavailable";
+      return "n/a";
     }
 
     return state;
@@ -78,9 +109,30 @@ export class CryptoMinerCard extends LitElement {
         <div class="card-shell">
           <img class="card-image" src=${baseImage} alt="Crypto miner card image" />
           <div class="stage-layer">
-            <div class="overlay stage-item">
-              <div class="overlay-label">Online Miners</div>
-              <div class="overlay-value">${this._getOnlineMinersValue()}</div>
+            <div class="sensor-chip stage-item hud-online">
+              <span class="chip-prefix chip-online">ONL</span>
+              <span class="chip-label">Online Miners</span>
+              <span class="chip-value">${this._getEntityState(this._config?.online_miners_entity)}</span>
+            </div>
+
+            <div class="sensor-chip stage-item hud-efficiency">
+              <span class="chip-prefix chip-efficiency">EFF</span>
+              <span class="chip-label">Fleet Energy Efficiency</span>
+              <span class="chip-value"
+                >${this._getEntityState(this._config?.fleet_energy_efficiency_entity)}</span
+              >
+            </div>
+
+            <div class="sensor-chip stage-item hud-power">
+              <span class="chip-prefix chip-power">PWR</span>
+              <span class="chip-label">Fleet Power</span>
+              <span class="chip-value">${this._getEntityState(this._config?.fleet_power_entity)}</span>
+            </div>
+
+            <div class="sensor-chip stage-item hud-offline">
+              <span class="chip-prefix chip-offline">OFF</span>
+              <span class="chip-label">Miners Offline</span>
+              <span class="chip-value">${this._getEntityState(this._config?.offline_miners_entity)}</span>
             </div>
           </div>
         </div>
@@ -126,27 +178,75 @@ export class CryptoMinerCard extends LitElement {
         pointer-events: auto;
       }
 
-      .overlay {
+      .sensor-chip {
         position: absolute;
-        top: 75%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        background: rgba(0, 0, 0, 0.72);
         color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 8px;
-        padding: 8px 10px;
-        line-height: 1.2;
-        text-align: center;
+        padding: 6px 8px;
+        font-size: 0.75rem;
+        line-height: 1;
+        transform: translate(-50%, -50%);
       }
 
-      .overlay-label {
-        font-size: 0.7rem;
-        opacity: 0.85;
-      }
-
-      .overlay-value {
-        font-size: 1rem;
+      .chip-prefix {
+        border-radius: 4px;
+        padding: 2px 5px;
+        font-size: 0.62rem;
+        letter-spacing: 0.04em;
         font-weight: 700;
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .chip-label {
+        opacity: 0.9;
+      }
+
+      .chip-value {
+        margin-left: 2px;
+        font-weight: 700;
+      }
+
+      .chip-online {
+        background: rgba(27, 146, 73, 0.9);
+      }
+
+      .chip-efficiency {
+        background: rgba(57, 102, 195, 0.9);
+      }
+
+      .chip-power {
+        background: rgba(181, 104, 12, 0.9);
+      }
+
+      .chip-offline {
+        background: rgba(165, 39, 45, 0.9);
+      }
+
+      .hud-online {
+        top: 20%;
+        left: 24%;
+      }
+
+      .hud-efficiency {
+        top: 31%;
+        left: 58%;
+      }
+
+      .hud-power {
+        top: 52%;
+        left: 70%;
+      }
+
+      .hud-offline {
+        top: 73%;
+        left: 34%;
       }
     `;
   }

@@ -14,19 +14,18 @@ export declare class CryptoMinerCard extends LitElement {
     static getConfigForm(): {
         schema: {
             name: string;
-            required: boolean;
             selector: {
                 entity: {};
             };
         }[];
         computeLabel: (schema: {
             name: string;
-        }) => "Online Miners Entity" | undefined;
+        }) => "Online Miners Entity" | "Fleet Energy Efficiency Entity" | "Fleet Power Entity" | "Miners Offline Entity" | undefined;
         computeHelper: (schema: {
             name: string;
-        }) => "Select the entity to display as Online Miners" | undefined;
+        }) => "Select the entity to display as Online Miners" | "Select the entity to display as Fleet Energy Efficiency" | "Select the entity to display as Fleet Power" | "Select the entity to display as Miners Offline" | undefined;
     };
-    private _getOnlineMinersValue;
+    private _getEntityState;
     protected render(): import("lit").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;
 }
