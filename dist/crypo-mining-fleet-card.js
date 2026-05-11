@@ -13,7 +13,8 @@ var A={d:(B,Q)=>{for(var E in Q)A.o(Q,E)&&!A.o(B,E)&&Object.defineProperty(B,E,{
             </div>
 
             <div class="sensor-chip stage-item hud-efficiency">
-              <span class="chip-label">Energy Efficiency</span>
+              <span class="chip-icon">🍃</span>
+              <span class="chip-label">Efficiency</span>
               <span class="chip-value"
                 >${this._formatEfficiencyState(this._config?.fleet_energy_efficiency_entity)}</span
               >
@@ -21,7 +22,7 @@ var A={d:(B,Q)=>{for(var E in Q)A.o(Q,E)&&!A.o(B,E)&&Object.defineProperty(B,E,{
 
             <div class="sensor-chip stage-item hud-power">
               <span class="chip-icon">⚡</span>
-              <span class="chip-label">Power</span>
+              <span class="chip-label">Total</span>
               <span class="chip-value">${this._formatPowerState(this._config?.fleet_power_entity)}</span>
             </div>
 
@@ -100,7 +101,7 @@ var A={d:(B,Q)=>{for(var E in Q)A.o(Q,E)&&!A.o(B,E)&&Object.defineProperty(B,E,{
         color: #fff;
         border-radius: 8px;
         padding: 6px 8px;
-        font-size: 0.75rem;
+        font-size: 0.7725rem;
         line-height: 1;
         transform: translate(-50%, -50%);
         border: none;
@@ -118,11 +119,11 @@ var A={d:(B,Q)=>{for(var E in Q)A.o(Q,E)&&!A.o(B,E)&&Object.defineProperty(B,E,{
 
       .fleet-power-title {
         position: absolute;
-        top: 63%;
+        top: 56%;
         left: 70%;
         transform: translate(-50%, -50%);
         color: #fff;
-        font-size: 0.72rem;
+        font-size: 0.945rem;
         font-family: "AlienEncountersBold", sans-serif;
         font-weight: 700;
         letter-spacing: 0.04em;
@@ -144,12 +145,12 @@ var A={d:(B,Q)=>{for(var E in Q)A.o(Q,E)&&!A.o(B,E)&&Object.defineProperty(B,E,{
       }
 
       .hud-efficiency {
-        top: 31%;
-        left: 58%;
+        top: 69%;
+        left: 70%;
       }
 
       .hud-power {
-        top: 72%;
+        top: 67%;
         left: 70%;
       }
 
