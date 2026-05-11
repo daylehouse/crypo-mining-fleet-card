@@ -2,7 +2,7 @@
 
 A Home Assistant custom dashboard card for monitoring a crypto miner fleet. Display real-time statistics for online and offline miners with a beautiful, responsive UI.
 
-![Crypto Mining Fleet Card preview](src/baselayer.png)
+![Crypto Mining Fleet Card preview](https://raw.githubusercontent.com/daylehouse/crypo-mining-fleet-card/main/src/baselayer.png)
 
 ## Features
 
