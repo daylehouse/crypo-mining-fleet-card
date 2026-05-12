@@ -1269,8 +1269,8 @@ export class CryptoMinerCard extends LitElement {
         }
 
         .hud-online {
-          top: 85%;
-          left: 66%;
+          top: 80%;
+          left: 85;
         }
 
         .hud-offline {
