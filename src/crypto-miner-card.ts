@@ -361,6 +361,7 @@ export class CryptoMinerCard extends LitElement {
     }
 
     const chartTitle = this._getEntityFriendlyName(hashrateEntity);
+    const isMobileChart = window.matchMedia("(max-width: 640px)").matches;
 
     const canvas = this.renderRoot?.querySelector("#fleet-hashrate-chart") as HTMLCanvasElement | null;
     if (!canvas) {
@@ -398,10 +399,13 @@ export class CryptoMinerCard extends LitElement {
             display: true,
             text: chartTitle,
             color: "#ffffff",
-            font: { size: 9, family: "AlienEncountersBold" },
+            font: {
+              size: isMobileChart ? 9 : 12,
+              family: "AlienEncountersBold"
+            },
             padding: {
-              top: 2,
-              bottom: 3
+              top: isMobileChart ? 2 : 4,
+              bottom: isMobileChart ? 3 : 6
             }
           },
           legend: {
@@ -908,7 +912,7 @@ export class CryptoMinerCard extends LitElement {
         .fleet-hashrate-chart-wrap {
           left: 50%;
           top: 26%;
-          width: 68%;
+          width: 70%;
           height: 15.4%;
         }
 
@@ -981,7 +985,7 @@ export class CryptoMinerCard extends LitElement {
         .fleet-hashrate-chart-wrap {
           left: 50%;
           top: 26.2%;
-          width: 67%;
+          width: 71%;
           height: 14.6%;
         }
 
