@@ -57,6 +57,13 @@ export class CryptoMinerCard extends LitElement {
   };
   private efficiencyChartUpdateInterval: number | null = null;
   private lastEfficiencyHistoryFetch = 0;
+  private powerChart: Chart | null = null;
+  private powerChartData: { labels: string[]; power: number[] } = {
+    labels: [],
+    power: []
+  };
+  private powerChartUpdateInterval: number | null = null;
+  private lastPowerHistoryFetch = 0;
 
   setConfig(config: CryptoMinerCardConfig) {
     if (!config || typeof config !== "object" || Array.isArray(config)) {
@@ -71,8 +78,10 @@ export class CryptoMinerCard extends LitElement {
     super.connectedCallback();
     void this.fetchAndPopulateHashrateHistory(true);
     void this.fetchAndPopulateEfficiencyHistory(true);
+    void this.fetchAndPopulatePowerHistory(true);
     this.startChartUpdater();
     this.startEfficiencyChartUpdater();
+    this.startPowerChartUpdater();
   }
 
   disconnectedCallback(): void {
@@ -97,18 +106,30 @@ export class CryptoMinerCard extends LitElement {
       this.efficiencyChart.destroy();
       this.efficiencyChart = null;
     }
+
+    if (this.powerChartUpdateInterval !== null) {
+      clearInterval(this.powerChartUpdateInterval);
+      this.powerChartUpdateInterval = null;
+    }
+
+    if (this.powerChart) {
+      this.powerChart.destroy();
+      this.powerChart = null;
+    }
   }
 
   protected willUpdate(changedProperties: PropertyValues<this>): void {
     if (changedProperties.has("hass")) {
       void this.fetchAndPopulateHashrateHistory(true);
       void this.fetchAndPopulateEfficiencyHistory(true);
+      void this.fetchAndPopulatePowerHistory(true);
     }
   }
 
   protected updated(): void {
     this.renderHashrateChart();
     this.renderEfficiencyChart();
+    this.renderPowerChart();
   }
 
   getCardSize(): number {
@@ -137,7 +158,8 @@ export class CryptoMinerCard extends LitElement {
       fleet_hashrate_chart_entity: "sensor.fleet_hashrate",
       efficiency_chart_entity: "sensor.fleet_energy_efficiency",
       chart_span_minutes: 60,
-      efficiency_chart_span_minutes: 60
+      efficiency_chart_span_minutes: 60,
+      power_chart_span_minutes: 60
     };
   }
 
@@ -219,6 +241,20 @@ export class CryptoMinerCard extends LitElement {
               ]
             }
           }
+        },
+        {
+          name: "power_chart_span_minutes",
+          selector: {
+            select: {
+              mode: "dropdown",
+              options: [
+                { value: 5, label: "5 minutes" },
+                { value: 15, label: "15 minutes" },
+                { value: 30, label: "30 minutes" },
+                { value: 60, label: "60 minutes" }
+              ]
+            }
+          }
         }
       ],
       computeLabel: (schema: { name: string }) => {
@@ -263,6 +299,9 @@ export class CryptoMinerCard extends LitElement {
         }
         if (schema.name === "efficiency_chart_span_minutes") {
           return "Efficiency Chart Time Span";
+        }
+        if (schema.name === "power_chart_span_minutes") {
+          return "Power Chart Time Span";
         }
         return undefined;
       },
@@ -309,6 +348,9 @@ export class CryptoMinerCard extends LitElement {
         if (schema.name === "efficiency_chart_span_minutes") {
           return "History span shown in the efficiency chart";
         }
+        if (schema.name === "power_chart_span_minutes") {
+          return "History span shown in the power chart";
+        }
         return undefined;
       }
     };
@@ -334,6 +376,16 @@ export class CryptoMinerCard extends LitElement {
     }, chartUpdateIntervalMs);
   }
 
+  private startPowerChartUpdater(): void {
+    if (this.powerChartUpdateInterval !== null) {
+      return;
+    }
+
+    this.powerChartUpdateInterval = window.setInterval(() => {
+      void this.fetchAndPopulatePowerHistory();
+    }, chartUpdateIntervalMs);
+  }
+
   private getChartSpanMinutes(): number {
     const configuredSpan = Number(this._config?.chart_span_minutes);
     if ([5, 15, 30, 60].includes(configuredSpan)) {
@@ -345,6 +397,15 @@ export class CryptoMinerCard extends LitElement {
 
   private getEfficiencyChartSpanMinutes(): number {
     const configuredSpan = Number(this._config?.efficiency_chart_span_minutes);
+    if ([5, 15, 30, 60].includes(configuredSpan)) {
+      return configuredSpan;
+    }
+
+    return 60;
+  }
+
+  private getPowerChartSpanMinutes(): number {
+    const configuredSpan = Number(this._config?.power_chart_span_minutes);
     if ([5, 15, 30, 60].includes(configuredSpan)) {
       return configuredSpan;
     }
@@ -483,6 +544,66 @@ export class CryptoMinerCard extends LitElement {
       this.renderEfficiencyChart();
     } catch (error) {
       console.error("Failed to fetch efficiency history for crypto-miner-card", error);
+    }
+  }
+
+  private async fetchAndPopulatePowerHistory(force = false): Promise<void> {
+    const powerEntity = this._config?.fleet_power_entity;
+    if (!this.hass || !powerEntity || !this.hass.connection) {
+      return;
+    }
+
+    const nowTs = Date.now();
+    if (!force && nowTs - this.lastPowerHistoryFetch < chartHistoryThrottleMs) {
+      return;
+    }
+    this.lastPowerHistoryFetch = nowTs;
+
+    const end = new Date();
+    const spanMinutes = this.getPowerChartSpanMinutes();
+    const start = new Date(end.getTime() - spanMinutes * 60 * 1000);
+
+    try {
+      const historyResult = await this.hass.connection.sendMessagePromise<unknown>({
+        type: "history/history_during_period",
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        entity_ids: [powerEntity],
+        minimal_response: true,
+        no_attributes: true
+      });
+
+      const historyPoints = this.extractHistoryPoints(historyResult, powerEntity);
+      this.powerChartData = { labels: [], power: [] };
+
+      for (let i = 0; i < historyPoints.length; i += 1) {
+        const point = historyPoints[i];
+        const rawTimestamp = point.lu ?? point.last_updated_ts;
+        const timestampMs = typeof rawTimestamp === "number" ? rawTimestamp * 1000 : NaN;
+        const ts = new Date(timestampMs);
+        const label = Number.isFinite(ts.getTime())
+          ? ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : `${i}`;
+
+        const powerValue = parseFloat(point.s ?? point.state ?? "NaN");
+        if (!Number.isNaN(powerValue)) {
+          this.powerChartData.labels.push(label);
+          this.powerChartData.power.push(powerValue);
+        }
+      }
+
+      if (this.powerChartData.labels.length === 0) {
+        const powerState = this._getEntityState(powerEntity);
+        const powerValue = parseFloat(powerState);
+        if (!Number.isNaN(powerValue)) {
+          this.powerChartData.labels.push("Now");
+          this.powerChartData.power.push(powerValue);
+        }
+      }
+
+      this.renderPowerChart();
+    } catch (error) {
+      console.error("Failed to fetch power history for crypto-miner-card", error);
     }
   }
 
@@ -682,6 +803,107 @@ export class CryptoMinerCard extends LitElement {
     this.efficiencyChart.update("none");
   }
 
+  private renderPowerChart(): void {
+    const powerEntity = this._config?.fleet_power_entity;
+    if (!powerEntity) {
+      return;
+    }
+
+    const chartTitle = this._getEntityFriendlyName(powerEntity, "Power");
+    const isMobileChart = window.matchMedia("(max-width: 640px)").matches;
+
+    const canvas = this.renderRoot?.querySelector("#power-chart") as HTMLCanvasElement | null;
+    if (!canvas) {
+      return;
+    }
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return;
+    }
+
+    const chartConfig: ChartConfiguration<"line", number[], string> = {
+      type: "line",
+      data: {
+        labels: this.powerChartData.labels,
+        datasets: [
+          {
+            label: "Power",
+            data: this.powerChartData.power,
+            borderColor: "#ff2bd6",
+            backgroundColor: "rgba(255,43,214,0.12)",
+            tension: 0.28,
+            pointRadius: 0,
+            borderWidth: 2,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        layout: {
+          padding: {
+            left: isMobileChart ? 2 : 4,
+            right: isMobileChart ? 2 : 4,
+            top: isMobileChart ? 0 : 2,
+            bottom: isMobileChart ? 0 : 2
+          }
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: chartTitle,
+            color: "#ffffff",
+            font: {
+              size: isMobileChart ? 8 : 12,
+              family: "AlienEncountersBold"
+            },
+            padding: {
+              top: isMobileChart ? 1 : 2,
+              bottom: isMobileChart ? 1 : 2
+            }
+          },
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: "#ffffff",
+              font: { size: 9, family: "AlienEncountersRegular" },
+              maxTicksLimit: 3
+            },
+            grid: { color: "rgba(255,255,255,0.12)" }
+          },
+          y: {
+            ticks: {
+              color: "#ffffff",
+              font: { size: 9, family: "AlienEncountersRegular" },
+              maxTicksLimit: 3,
+              callback: (tickValue) => Math.round(Number(tickValue)).toString()
+            },
+            grid: { color: "rgba(255,43,214,0.12)" }
+          }
+        }
+      }
+    };
+
+    if (!this.powerChart) {
+      this.powerChart = new Chart(context, chartConfig);
+      return;
+    }
+
+    this.powerChart.data.labels = this.powerChartData.labels;
+    this.powerChart.data.datasets[0].data = this.powerChartData.power;
+    if (this.powerChart.options.plugins?.title) {
+      this.powerChart.options.plugins.title.text = chartTitle;
+    }
+    this.powerChart.update("none");
+  }
+
   private _getEntityState(entityId?: string): string {
     if (!entityId) {
       return "--";
@@ -838,6 +1060,17 @@ export class CryptoMinerCard extends LitElement {
               `
               : null}
 
+            ${this._config?.fleet_power_entity
+              ? html`
+                <div class="power-chart-wrap stage-item">
+                  <canvas
+                    id="power-chart"
+                    aria-label="Power history chart"
+                  ></canvas>
+                </div>
+              `
+              : null}
+
             <div class="sensor-chip stage-item hud-online">
               <ha-icon class="chip-icon chip-icon-online" icon="mdi:account-hard-hat"></ha-icon>
               <span class="chip-label">Online:</span>
@@ -852,7 +1085,7 @@ export class CryptoMinerCard extends LitElement {
 
             <div class="sensor-chip stage-item hud-power">
               <ha-icon class="chip-icon chip-icon-power" icon="mdi:power"></ha-icon>
-              <span class="chip-label">Total</span>
+              <span class="chip-label">Power</span>
               <span class="chip-value">${this._formatPowerState(this._config?.fleet_power_entity)}</span>
             </div>
 
@@ -978,6 +1211,23 @@ export class CryptoMinerCard extends LitElement {
         background: transparent;
       }
 
+      .power-chart-wrap {
+        position: absolute;
+        left: 12%;
+        top: 56%;
+        width: 35.5%;
+        height: 18%;
+        overflow: hidden;
+        z-index: 1;
+      }
+
+      #power-chart {
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: transparent;
+      }
+
       .card-title {
         position: absolute;
         top: 9%;
@@ -1087,19 +1337,7 @@ export class CryptoMinerCard extends LitElement {
       }
 
       .miners-title {
-        position: absolute;
-        top: 59%;
-        left: 30%;
-        transform: translate(-50%, -50%);
-        color: #fff;
-        font-size: 1.151rem;
-        font-family: "AlienEncountersBold", sans-serif;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-        background: transparent;
-        border: none;
-        white-space: nowrap;
+        display: none;
       }
 
       .chip-value {
@@ -1110,8 +1348,8 @@ export class CryptoMinerCard extends LitElement {
       }
 
       .hud-online {
-        top: 85%;
-        left: 65.5%;
+        top: 83%;
+        left: 35.5%;
       }
 
       .hud-efficiency {
@@ -1119,13 +1357,13 @@ export class CryptoMinerCard extends LitElement {
       }
 
       .hud-power {
-        top: 92%;
-        left: 50%;
+        top: 95%;
+        left: 78.5%;
       }
 
       .hud-offline {
-        top: 70%;
-        left: 29%;
+        top: 83%;
+        left: 65.5%;
       }
 
       .hud-btc-rate {
@@ -1168,6 +1406,13 @@ export class CryptoMinerCard extends LitElement {
           height: 17%;
         }
 
+        .power-chart-wrap {
+          left: 12%;
+          top: 56%;
+          width: 35.5%;
+          height: 17%;
+        }
+
         .card-title {
           font-size: 0.7rem;
           padding: 5px 10px;
@@ -1185,18 +1430,17 @@ export class CryptoMinerCard extends LitElement {
         }
 
         .miners-title {
-          font-size: 1.03rem;
-          top: 58.5%;
+          display: none;
         }
 
         .hud-online {
-          top: 85%;
-          left: 66%;
+          top: 83%;
+          left: 36%;
         }
 
         .hud-offline {
-          top: 70.5%;
-          left: 30%;
+          top: 83%;
+          left: 66%;
         }
 
         .hud-efficiency {
@@ -1205,8 +1449,8 @@ export class CryptoMinerCard extends LitElement {
         }
 
         .hud-power {
-          top: 92%;
-          left: 50%;
+          top: 95%;
+          left: 78.5%;
         }
 
         .hud-efficiency .chip-value,
@@ -1247,6 +1491,13 @@ export class CryptoMinerCard extends LitElement {
           height: 16.5%;
         }
 
+        .power-chart-wrap {
+          left: 12%;
+          top: 56%;
+          width: 35.5%;
+          height: 16.5%;
+        }
+
         .card-title {
           font-size: 0.6rem;
           padding: 4px 8px;
@@ -1264,18 +1515,17 @@ export class CryptoMinerCard extends LitElement {
         }
 
         .miners-title {
-          font-size: 0.9rem;
-          top: 58%;
+          display: none;
         }
 
         .hud-online {
-          top: 80%;
-          left: 85;
+          top: 78%;
+          left: 36%;
         }
 
         .hud-offline {
-          top: 71%;
-          left: 31%;
+          top: 78%;
+          left: 66%;
         }
 
         .hud-efficiency {
@@ -1284,8 +1534,8 @@ export class CryptoMinerCard extends LitElement {
         }
 
         .hud-power {
-          top: 92%;
-          left: 50%;
+          top: 95%;
+          left: 78.5%;
         }
 
         .hud-efficiency .chip-value,

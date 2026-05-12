@@ -14,6 +14,7 @@ export interface CryptoMinerCardConfig {
   efficiency_chart_entity?: string;
   chart_span_minutes?: number;
   efficiency_chart_span_minutes?: number;
+  power_chart_span_minutes?: number;
 }
 
 interface HomeAssistantConnection {

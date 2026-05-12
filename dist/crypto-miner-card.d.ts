@@ -12,6 +12,10 @@ export declare class CryptoMinerCard extends LitElement {
     private efficiencyChartData;
     private efficiencyChartUpdateInterval;
     private lastEfficiencyHistoryFetch;
+    private powerChart;
+    private powerChartData;
+    private powerChartUpdateInterval;
+    private lastPowerHistoryFetch;
     setConfig(config: CryptoMinerCardConfig): void;
     connectedCallback(): void;
     disconnectedCallback(): void;
@@ -55,20 +59,24 @@ export declare class CryptoMinerCard extends LitElement {
         })[];
         computeLabel: (schema: {
             name: string;
-        }) => "Card Title" | "Online Miners Entity" | "Energy Efficiency Entity" | "Power Entity" | "Miners Offline Entity" | "BTC Rate Entity" | "BCH Rate Entity" | "LTC Rate Entity" | "ALEO Rate Entity" | "Solo Pool Hashrate Entity" | "Fleet Hashrate Chart Entity" | "Efficiency Chart Entity" | "Hashrate Chart Time Span" | "Efficiency Chart Time Span" | undefined;
+        }) => "Card Title" | "Online Miners Entity" | "Energy Efficiency Entity" | "Power Entity" | "Miners Offline Entity" | "BTC Rate Entity" | "BCH Rate Entity" | "LTC Rate Entity" | "ALEO Rate Entity" | "Solo Pool Hashrate Entity" | "Fleet Hashrate Chart Entity" | "Efficiency Chart Entity" | "Hashrate Chart Time Span" | "Efficiency Chart Time Span" | "Power Chart Time Span" | undefined;
         computeHelper: (schema: {
             name: string;
-        }) => "Optional title displayed at the top of the card" | "Select the entity to display as Online Miners" | "Select the entity to display as Energy Efficiency" | "Select the entity to display as Power" | "Select the entity to display as Miners Offline" | "Select the entity to display as BTC Rate" | "Select the entity to display as BCH Rate" | "Select the entity to display as LTC Rate" | "Select the entity to display as ALEO Rate" | "Select the entity to display as Solo Pool Hashrate" | "Entity used to render fleet hashrate history chart" | "Entity used to render efficiency history chart" | "History span shown in the hashrate chart" | "History span shown in the efficiency chart" | undefined;
+        }) => "Optional title displayed at the top of the card" | "Select the entity to display as Online Miners" | "Select the entity to display as Energy Efficiency" | "Select the entity to display as Power" | "Select the entity to display as Miners Offline" | "Select the entity to display as BTC Rate" | "Select the entity to display as BCH Rate" | "Select the entity to display as LTC Rate" | "Select the entity to display as ALEO Rate" | "Select the entity to display as Solo Pool Hashrate" | "Entity used to render fleet hashrate history chart" | "Entity used to render efficiency history chart" | "History span shown in the hashrate chart" | "History span shown in the efficiency chart" | "History span shown in the power chart" | undefined;
     };
     private startChartUpdater;
     private startEfficiencyChartUpdater;
+    private startPowerChartUpdater;
     private getChartSpanMinutes;
     private getEfficiencyChartSpanMinutes;
+    private getPowerChartSpanMinutes;
     private fetchAndPopulateHashrateHistory;
     private extractHistoryPoints;
     private fetchAndPopulateEfficiencyHistory;
+    private fetchAndPopulatePowerHistory;
     private renderHashrateChart;
     private renderEfficiencyChart;
+    private renderPowerChart;
     private _getEntityState;
     private _getEntityStateWithUnit;
     private _formatPowerState;
