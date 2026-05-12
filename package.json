@@ -38,6 +38,7 @@
     "webpack-cli": "^5.1.0"
   },
   "dependencies": {
+    "chart.js": "^4.5.1",
     "lit": "^3.0.0"
   }
 }

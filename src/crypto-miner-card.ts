@@ -1,9 +1,22 @@
 import { LitElement, html, css } from "lit";
+import type { PropertyValues } from "lit";
+import type { ChartConfiguration } from "chart.js";
+import Chart from "chart.js/auto";
 import { customElement, property } from "lit/decorators.js";
 import baseImage from "./baselayer.png";
 import alienRegular from "./Alien-Encounters-Solid-Regular.ttf";
 import alienBold from "./Alien-Encounters-Solid-Bold.ttf";
 import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
+
+const chartUpdateIntervalMs = 60000;
+const chartHistoryThrottleMs = 60000;
+
+interface HistoryPoint {
+  s?: string;
+  lu?: number;
+  last_updated_ts?: number;
+  state?: string;
+}
 
 // Inject @font-face into document head so fonts work across Shadow DOM boundaries
 if (!document.getElementById("crypto-miner-card-fonts")) {
@@ -30,6 +43,13 @@ if (!document.getElementById("crypto-miner-card-fonts")) {
 export class CryptoMinerCard extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistantLike;
   private _config?: CryptoMinerCardConfig;
+  private chart: Chart | null = null;
+  private chartData: { labels: string[]; hashrate: number[] } = {
+    labels: [],
+    hashrate: []
+  };
+  private chartUpdateInterval: number | null = null;
+  private lastHistoryFetch = 0;
 
   setConfig(config: CryptoMinerCardConfig) {
     if (!config || typeof config !== "object" || Array.isArray(config)) {
@@ -37,6 +57,37 @@ export class CryptoMinerCard extends LitElement {
     }
 
     this._config = config;
+    void this.fetchAndPopulateHashrateHistory(true);
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    void this.fetchAndPopulateHashrateHistory(true);
+    this.startChartUpdater();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+
+    if (this.chartUpdateInterval !== null) {
+      clearInterval(this.chartUpdateInterval);
+      this.chartUpdateInterval = null;
+    }
+
+    if (this.chart) {
+      this.chart.destroy();
+      this.chart = null;
+    }
+  }
+
+  protected willUpdate(changedProperties: PropertyValues<this>): void {
+    if (changedProperties.has("hass")) {
+      void this.fetchAndPopulateHashrateHistory(true);
+    }
+  }
+
+  protected updated(): void {
+    this.renderHashrateChart();
   }
 
   getCardSize(): number {
@@ -61,7 +112,9 @@ export class CryptoMinerCard extends LitElement {
       bch_rate_entity: "sensor.bch_rate",
       ltc_rate_entity: "sensor.ltc_rate",
       aleo_rate_entity: "sensor.aleo_rate",
-      solo_pool_hashrate_entity: "sensor.solo_pool_hashrate"
+      solo_pool_hashrate_entity: "sensor.solo_pool_hashrate",
+      fleet_hashrate_chart_entity: "sensor.fleet_hashrate",
+      chart_span_minutes: 60
     };
   }
 
@@ -107,6 +160,24 @@ export class CryptoMinerCard extends LitElement {
         {
           name: "solo_pool_hashrate_entity",
           selector: { entity: {} }
+        },
+        {
+          name: "fleet_hashrate_chart_entity",
+          selector: { entity: {} }
+        },
+        {
+          name: "chart_span_minutes",
+          selector: {
+            select: {
+              mode: "dropdown",
+              options: [
+                { value: 5, label: "5 minutes" },
+                { value: 15, label: "15 minutes" },
+                { value: 30, label: "30 minutes" },
+                { value: 60, label: "60 minutes" }
+              ]
+            }
+          }
         }
       ],
       computeLabel: (schema: { name: string }) => {
@@ -139,6 +210,12 @@ export class CryptoMinerCard extends LitElement {
         }
         if (schema.name === "solo_pool_hashrate_entity") {
           return "Solo Pool Hashrate Entity";
+        }
+        if (schema.name === "fleet_hashrate_chart_entity") {
+          return "Fleet Hashrate Chart Entity";
+        }
+        if (schema.name === "chart_span_minutes") {
+          return "Chart Time Span";
         }
         return undefined;
       },
@@ -173,9 +250,197 @@ export class CryptoMinerCard extends LitElement {
         if (schema.name === "solo_pool_hashrate_entity") {
           return "Select the entity to display as Solo Pool Hashrate";
         }
+        if (schema.name === "fleet_hashrate_chart_entity") {
+          return "Entity used to render fleet hashrate history chart";
+        }
+        if (schema.name === "chart_span_minutes") {
+          return "History span shown in the chart";
+        }
         return undefined;
       }
     };
+  }
+
+  private startChartUpdater(): void {
+    if (this.chartUpdateInterval !== null) {
+      return;
+    }
+
+    this.chartUpdateInterval = window.setInterval(() => {
+      void this.fetchAndPopulateHashrateHistory();
+    }, chartUpdateIntervalMs);
+  }
+
+  private getChartSpanMinutes(): number {
+    const configuredSpan = Number(this._config?.chart_span_minutes);
+    if ([5, 15, 30, 60].includes(configuredSpan)) {
+      return configuredSpan;
+    }
+
+    return 60;
+  }
+
+  private async fetchAndPopulateHashrateHistory(force = false): Promise<void> {
+    const hashrateEntity = this._config?.fleet_hashrate_chart_entity;
+    if (!this.hass || !hashrateEntity || !this.hass.connection) {
+      return;
+    }
+
+    const nowTs = Date.now();
+    if (!force && nowTs - this.lastHistoryFetch < chartHistoryThrottleMs) {
+      return;
+    }
+    this.lastHistoryFetch = nowTs;
+
+    const end = new Date();
+    const spanMinutes = this.getChartSpanMinutes();
+    const start = new Date(end.getTime() - spanMinutes * 60 * 1000);
+
+    try {
+      const historyResult = await this.hass.connection.sendMessagePromise<unknown>({
+        type: "history/history_during_period",
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        entity_ids: [hashrateEntity],
+        minimal_response: true,
+        no_attributes: true
+      });
+
+      const historyPoints = this.extractHistoryPoints(historyResult, hashrateEntity);
+      this.chartData = { labels: [], hashrate: [] };
+
+      for (let i = 0; i < historyPoints.length; i += 1) {
+        const point = historyPoints[i];
+        const rawTimestamp = point.lu ?? point.last_updated_ts;
+        const timestampMs = typeof rawTimestamp === "number" ? rawTimestamp * 1000 : NaN;
+        const ts = new Date(timestampMs);
+        const label = Number.isFinite(ts.getTime())
+          ? ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : `${i}`;
+
+        const hashValue = parseFloat(point.s ?? point.state ?? "NaN");
+        if (!Number.isNaN(hashValue)) {
+          this.chartData.labels.push(label);
+          this.chartData.hashrate.push(hashValue);
+        }
+      }
+
+      if (this.chartData.labels.length === 0) {
+        const hashrateState = this._getEntityState(hashrateEntity);
+        const hashrateValue = parseFloat(hashrateState);
+        if (!Number.isNaN(hashrateValue)) {
+          this.chartData.labels.push("Now");
+          this.chartData.hashrate.push(hashrateValue);
+        }
+      }
+
+      this.renderHashrateChart();
+    } catch (error) {
+      console.error("Failed to fetch hashrate history for crypto-miner-card", error);
+    }
+  }
+
+  private extractHistoryPoints(historyResult: unknown, entityId: string): HistoryPoint[] {
+    if (historyResult && typeof historyResult === "object" && !Array.isArray(historyResult)) {
+      const resultMap = historyResult as Record<string, HistoryPoint[]>;
+      return resultMap[entityId] ?? [];
+    }
+
+    if (Array.isArray(historyResult)) {
+      const entities = historyResult as Array<Array<HistoryPoint & { entity_id?: string }>>;
+      return entities.find((series) => series[0]?.entity_id === entityId) ?? [];
+    }
+
+    return [];
+  }
+
+  private renderHashrateChart(): void {
+    const hashrateEntity = this._config?.fleet_hashrate_chart_entity;
+    if (!hashrateEntity) {
+      return;
+    }
+
+    const chartTitle = this._getEntityFriendlyName(hashrateEntity);
+
+    const canvas = this.renderRoot?.querySelector("#fleet-hashrate-chart") as HTMLCanvasElement | null;
+    if (!canvas) {
+      return;
+    }
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return;
+    }
+
+    const chartConfig: ChartConfiguration<"line", number[], string> = {
+      type: "line",
+      data: {
+        labels: this.chartData.labels,
+        datasets: [
+          {
+            label: "Fleet Hashrate",
+            data: this.chartData.hashrate,
+            borderColor: "#15ff00",
+            backgroundColor: "rgba(21,255,0,0.15)",
+            tension: 0.28,
+            pointRadius: 0,
+            borderWidth: 2,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          title: {
+            display: true,
+            text: chartTitle,
+            color: "#ffffff",
+            font: { size: 12, family: "AlienEncountersBold" },
+            padding: {
+              top: 4,
+              bottom: 6
+            }
+          },
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: "#9ffbff",
+              font: { size: 10, family: "AlienEncountersRegular" },
+              maxTicksLimit: 4
+            },
+            grid: { color: "rgba(159,251,255,0.12)" }
+          },
+          y: {
+            ticks: {
+              color: "#15ff00",
+              font: { size: 10, family: "AlienEncountersRegular" },
+              maxTicksLimit: 3,
+              callback: (tickValue) => Math.round(Number(tickValue)).toString()
+            },
+            grid: { color: "rgba(21,255,0,0.12)" }
+          }
+        }
+      }
+    };
+
+    if (!this.chart) {
+      this.chart = new Chart(context, chartConfig);
+      return;
+    }
+
+    this.chart.data.labels = this.chartData.labels;
+    this.chart.data.datasets[0].data = this.chartData.hashrate;
+    if (this.chart.options.plugins?.title) {
+      this.chart.options.plugins.title.text = chartTitle;
+    }
+    this.chart.update("none");
   }
 
   private _getEntityState(entityId?: string): string {
@@ -270,8 +535,39 @@ export class CryptoMinerCard extends LitElement {
     return formattedValue;
   }
 
+  private _getEntityFriendlyName(entityId?: string, fallback = "Fleet Hashrate"): string {
+    if (!entityId) {
+      return fallback;
+    }
+
+    const friendlyName = this.hass?.states?.[entityId]?.attributes?.friendly_name;
+    if (typeof friendlyName === "string" && friendlyName.trim().length > 0) {
+      const cleanedFriendlyName = friendlyName
+        .trim()
+        .replace(/^crypto\s+miner\s+fleet\s+monitor\s*/i, "")
+        .replace(/^crypto\s+miner\s+feet\s+montor\s*/i, "")
+        .trim();
+
+      if (cleanedFriendlyName.length > 0) {
+        return cleanedFriendlyName;
+      }
+    }
+
+    const entityName = entityId
+      .split(".")
+      .pop()
+      ?.replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase())
+      .trim();
+    if (entityName) {
+      return entityName;
+    }
+
+    return fallback;
+  }
+
   protected render() {
-    const title = this._config?.title?.trim() || "Crypto Mining Fleet";
+    const title = this._config?.title?.trim() || "";
 
     return html`
       <ha-card>
@@ -279,6 +575,17 @@ export class CryptoMinerCard extends LitElement {
           <img class="card-image" src=${baseImage} alt="Crypto miner card image" />
           <div class="stage-layer">
             <div class="card-title stage-item">${title}</div>
+
+            ${this._config?.fleet_hashrate_chart_entity
+              ? html`
+                <div class="fleet-hashrate-chart-wrap stage-item">
+                  <canvas
+                    id="fleet-hashrate-chart"
+                    aria-label="Fleet hashrate history chart"
+                  ></canvas>
+                </div>
+              `
+              : null}
 
             <div class="sensor-chip stage-item hud-online">
               <ha-icon class="chip-icon chip-icon-online" icon="mdi:account-hard-hat"></ha-icon>
@@ -385,6 +692,23 @@ export class CryptoMinerCard extends LitElement {
       .stage-item {
         pointer-events: auto;
         z-index: 2;
+      }
+
+      .fleet-hashrate-chart-wrap {
+        position: absolute;
+        left: 50%;
+        top: 25.8%;
+        width: 71%;
+        height: 16%;
+        transform: translate(-50%, -50%);
+        z-index: 1;
+      }
+
+      #fleet-hashrate-chart {
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: transparent;
       }
 
       .card-title {
@@ -535,8 +859,8 @@ export class CryptoMinerCard extends LitElement {
       }
 
       .hud-online {
-        top: 64%;
-        left: 29%;
+        top: 85%;
+        left: 65.5%;
       }
 
       .hud-efficiency {
@@ -580,6 +904,13 @@ export class CryptoMinerCard extends LitElement {
       }
 
       @media (max-width: 640px) {
+        .fleet-hashrate-chart-wrap {
+          left: 50%;
+          top: 26%;
+          width: 73%;
+          height: 15.4%;
+        }
+
         .card-title {
           font-size: 0.7rem;
           padding: 5px 10px;
@@ -603,8 +934,8 @@ export class CryptoMinerCard extends LitElement {
         }
 
         .hud-online {
-          top: 64.5%;
-          left: 30%;
+          top: 85%;
+          left: 66%;
         }
 
         .hud-offline {
@@ -645,7 +976,14 @@ export class CryptoMinerCard extends LitElement {
         }
       }
 
-      @media (max-width: 400px) {
+      @media (max-width: 600px) {
+        .fleet-hashrate-chart-wrap {
+          left: 50%;
+          top: 26.2%;
+          width: 76%;
+          height: 14.6%;
+        }
+
         .card-title {
           font-size: 0.6rem;
           padding: 4px 8px;
@@ -669,8 +1007,8 @@ export class CryptoMinerCard extends LitElement {
         }
 
         .hud-online {
-          top: 65%;
-          left: 31%;
+          top: 85%;
+          left: 66%;
         }
 
         .hud-offline {
