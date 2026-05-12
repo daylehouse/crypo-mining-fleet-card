@@ -50,6 +50,13 @@ export class CryptoMinerCard extends LitElement {
   };
   private chartUpdateInterval: number | null = null;
   private lastHistoryFetch = 0;
+  private efficiencyChart: Chart | null = null;
+  private efficiencyChartData: { labels: string[]; efficiency: number[] } = {
+    labels: [],
+    efficiency: []
+  };
+  private efficiencyChartUpdateInterval: number | null = null;
+  private lastEfficiencyHistoryFetch = 0;
 
   setConfig(config: CryptoMinerCardConfig) {
     if (!config || typeof config !== "object" || Array.isArray(config)) {
@@ -63,7 +70,9 @@ export class CryptoMinerCard extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     void this.fetchAndPopulateHashrateHistory(true);
+    void this.fetchAndPopulateEfficiencyHistory(true);
     this.startChartUpdater();
+    this.startEfficiencyChartUpdater();
   }
 
   disconnectedCallback(): void {
@@ -78,16 +87,28 @@ export class CryptoMinerCard extends LitElement {
       this.chart.destroy();
       this.chart = null;
     }
+
+    if (this.efficiencyChartUpdateInterval !== null) {
+      clearInterval(this.efficiencyChartUpdateInterval);
+      this.efficiencyChartUpdateInterval = null;
+    }
+
+    if (this.efficiencyChart) {
+      this.efficiencyChart.destroy();
+      this.efficiencyChart = null;
+    }
   }
 
   protected willUpdate(changedProperties: PropertyValues<this>): void {
     if (changedProperties.has("hass")) {
       void this.fetchAndPopulateHashrateHistory(true);
+      void this.fetchAndPopulateEfficiencyHistory(true);
     }
   }
 
   protected updated(): void {
     this.renderHashrateChart();
+    this.renderEfficiencyChart();
   }
 
   getCardSize(): number {
@@ -114,7 +135,9 @@ export class CryptoMinerCard extends LitElement {
       aleo_rate_entity: "sensor.aleo_rate",
       solo_pool_hashrate_entity: "sensor.solo_pool_hashrate",
       fleet_hashrate_chart_entity: "sensor.fleet_hashrate",
-      chart_span_minutes: 60
+      efficiency_chart_entity: "sensor.fleet_energy_efficiency",
+      chart_span_minutes: 60,
+      efficiency_chart_span_minutes: 60
     };
   }
 
@@ -166,7 +189,25 @@ export class CryptoMinerCard extends LitElement {
           selector: { entity: {} }
         },
         {
+          name: "efficiency_chart_entity",
+          selector: { entity: {} }
+        },
+        {
           name: "chart_span_minutes",
+          selector: {
+            select: {
+              mode: "dropdown",
+              options: [
+                { value: 5, label: "5 minutes" },
+                { value: 15, label: "15 minutes" },
+                { value: 30, label: "30 minutes" },
+                { value: 60, label: "60 minutes" }
+              ]
+            }
+          }
+        },
+        {
+          name: "efficiency_chart_span_minutes",
           selector: {
             select: {
               mode: "dropdown",
@@ -214,8 +255,14 @@ export class CryptoMinerCard extends LitElement {
         if (schema.name === "fleet_hashrate_chart_entity") {
           return "Fleet Hashrate Chart Entity";
         }
+        if (schema.name === "efficiency_chart_entity") {
+          return "Efficiency Chart Entity";
+        }
         if (schema.name === "chart_span_minutes") {
-          return "Chart Time Span";
+          return "Hashrate Chart Time Span";
+        }
+        if (schema.name === "efficiency_chart_span_minutes") {
+          return "Efficiency Chart Time Span";
         }
         return undefined;
       },
@@ -253,8 +300,14 @@ export class CryptoMinerCard extends LitElement {
         if (schema.name === "fleet_hashrate_chart_entity") {
           return "Entity used to render fleet hashrate history chart";
         }
+        if (schema.name === "efficiency_chart_entity") {
+          return "Entity used to render efficiency history chart";
+        }
         if (schema.name === "chart_span_minutes") {
-          return "History span shown in the chart";
+          return "History span shown in the hashrate chart";
+        }
+        if (schema.name === "efficiency_chart_span_minutes") {
+          return "History span shown in the efficiency chart";
         }
         return undefined;
       }
@@ -271,8 +324,27 @@ export class CryptoMinerCard extends LitElement {
     }, chartUpdateIntervalMs);
   }
 
+  private startEfficiencyChartUpdater(): void {
+    if (this.efficiencyChartUpdateInterval !== null) {
+      return;
+    }
+
+    this.efficiencyChartUpdateInterval = window.setInterval(() => {
+      void this.fetchAndPopulateEfficiencyHistory();
+    }, chartUpdateIntervalMs);
+  }
+
   private getChartSpanMinutes(): number {
     const configuredSpan = Number(this._config?.chart_span_minutes);
+    if ([5, 15, 30, 60].includes(configuredSpan)) {
+      return configuredSpan;
+    }
+
+    return 60;
+  }
+
+  private getEfficiencyChartSpanMinutes(): number {
+    const configuredSpan = Number(this._config?.efficiency_chart_span_minutes);
     if ([5, 15, 30, 60].includes(configuredSpan)) {
       return configuredSpan;
     }
@@ -354,6 +426,66 @@ export class CryptoMinerCard extends LitElement {
     return [];
   }
 
+  private async fetchAndPopulateEfficiencyHistory(force = false): Promise<void> {
+    const efficiencyEntity = this._config?.efficiency_chart_entity;
+    if (!this.hass || !efficiencyEntity || !this.hass.connection) {
+      return;
+    }
+
+    const nowTs = Date.now();
+    if (!force && nowTs - this.lastEfficiencyHistoryFetch < chartHistoryThrottleMs) {
+      return;
+    }
+    this.lastEfficiencyHistoryFetch = nowTs;
+
+    const end = new Date();
+    const spanMinutes = this.getEfficiencyChartSpanMinutes();
+    const start = new Date(end.getTime() - spanMinutes * 60 * 1000);
+
+    try {
+      const historyResult = await this.hass.connection.sendMessagePromise<unknown>({
+        type: "history/history_during_period",
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        entity_ids: [efficiencyEntity],
+        minimal_response: true,
+        no_attributes: true
+      });
+
+      const historyPoints = this.extractHistoryPoints(historyResult, efficiencyEntity);
+      this.efficiencyChartData = { labels: [], efficiency: [] };
+
+      for (let i = 0; i < historyPoints.length; i += 1) {
+        const point = historyPoints[i];
+        const rawTimestamp = point.lu ?? point.last_updated_ts;
+        const timestampMs = typeof rawTimestamp === "number" ? rawTimestamp * 1000 : NaN;
+        const ts = new Date(timestampMs);
+        const label = Number.isFinite(ts.getTime())
+          ? ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : `${i}`;
+
+        const efficiencyValue = parseFloat(point.s ?? point.state ?? "NaN");
+        if (!Number.isNaN(efficiencyValue)) {
+          this.efficiencyChartData.labels.push(label);
+          this.efficiencyChartData.efficiency.push(efficiencyValue);
+        }
+      }
+
+      if (this.efficiencyChartData.labels.length === 0) {
+        const efficiencyState = this._getEntityState(efficiencyEntity);
+        const efficiencyValue = parseFloat(efficiencyState);
+        if (!Number.isNaN(efficiencyValue)) {
+          this.efficiencyChartData.labels.push("Now");
+          this.efficiencyChartData.efficiency.push(efficiencyValue);
+        }
+      }
+
+      this.renderEfficiencyChart();
+    } catch (error) {
+      console.error("Failed to fetch efficiency history for crypto-miner-card", error);
+    }
+  }
+
   private renderHashrateChart(): void {
     const hashrateEntity = this._config?.fleet_hashrate_chart_entity;
     if (!hashrateEntity) {
@@ -400,7 +532,7 @@ export class CryptoMinerCard extends LitElement {
             text: chartTitle,
             color: "#ffffff",
             font: {
-              size: isMobileChart ? 9 : 12,
+              size: isMobileChart ? 9 : 14,
               family: "AlienEncountersBold"
             },
             padding: {
@@ -446,6 +578,108 @@ export class CryptoMinerCard extends LitElement {
       this.chart.options.plugins.title.text = chartTitle;
     }
     this.chart.update("none");
+  }
+
+  private renderEfficiencyChart(): void {
+    const efficiencyEntity = this._config?.efficiency_chart_entity;
+    if (!efficiencyEntity) {
+      return;
+    }
+
+    const chartTitle = this._getEntityFriendlyName(efficiencyEntity);
+    const isMobileChart = window.matchMedia("(max-width: 640px)").matches;
+
+    const canvas = this.renderRoot?.querySelector("#efficiency-chart") as HTMLCanvasElement | null;
+    if (!canvas) {
+      return;
+    }
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return;
+    }
+
+    const chartConfig: ChartConfiguration<"line", number[], string> = {
+      type: "line",
+      data: {
+        labels: this.efficiencyChartData.labels,
+        datasets: [
+          {
+            label: "Efficiency",
+            data: this.efficiencyChartData.efficiency,
+            borderColor: "#00f5ff",
+            backgroundColor: "rgba(0,245,255,0.12)",
+            tension: 0.28,
+            pointRadius: 0,
+            borderWidth: 2,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        layout: {
+          padding: {
+            left: isMobileChart ? 2 : 4,
+            right: isMobileChart ? 2 : 4,
+            top: isMobileChart ? 0 : 2,
+            bottom: isMobileChart ? 0 : 2
+          }
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: chartTitle,
+            color: "#ffffff",
+            font: {
+              size: isMobileChart ? 8 : 12,
+              family: "AlienEncountersBold"
+            },
+            padding: {
+              top: isMobileChart ? 1 : 2,
+              bottom: isMobileChart ? 1 : 2
+            }
+          },
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: "#ffffff",
+              font: { size: 9, family: "AlienEncountersRegular" },
+              maxTicksLimit: 3
+            },
+            grid: { color: "rgba(159,251,255,0.12)" }
+          },
+          y: {
+            ticks: {
+              color: "#ffffff",
+              font: { size: 9, family: "AlienEncountersRegular" },
+              maxTicksLimit: 3,
+              stepSize: 1,
+              callback: (tickValue) => Math.round(Number(tickValue)).toString()
+            },
+            grid: { color: "rgba(0,245,255,0.12)" }
+          }
+        }
+      }
+    };
+
+    if (!this.efficiencyChart) {
+      this.efficiencyChart = new Chart(context, chartConfig);
+      return;
+    }
+
+    this.efficiencyChart.data.labels = this.efficiencyChartData.labels;
+    this.efficiencyChart.data.datasets[0].data = this.efficiencyChartData.efficiency;
+    if (this.efficiencyChart.options.plugins?.title) {
+      this.efficiencyChart.options.plugins.title.text = chartTitle;
+    }
+    this.efficiencyChart.update("none");
   }
 
   private _getEntityState(entityId?: string): string {
@@ -551,6 +785,7 @@ export class CryptoMinerCard extends LitElement {
         .trim()
         .replace(/^crypto\s+miner\s+fleet\s+monitor\s*/i, "")
         .replace(/^crypto\s+miner\s+feet\s+montor\s*/i, "")
+        .replace(/^fleet\s+/i, "")
         .trim();
 
       if (cleanedFriendlyName.length > 0) {
@@ -587,6 +822,17 @@ export class CryptoMinerCard extends LitElement {
                   <canvas
                     id="fleet-hashrate-chart"
                     aria-label="Fleet hashrate history chart"
+                  ></canvas>
+                </div>
+              `
+              : null}
+
+            ${this._config?.efficiency_chart_entity
+              ? html`
+                <div class="efficiency-chart-wrap stage-item">
+                  <canvas
+                    id="efficiency-chart"
+                    aria-label="Efficiency history chart"
                   ></canvas>
                 </div>
               `
@@ -652,7 +898,6 @@ export class CryptoMinerCard extends LitElement {
             </div>
 
             <div class="miners-title stage-item">Miners</div>
-            <div class="fleet-power-title stage-item">Fleet Power</div>
           </div>
         </div>
       </ha-card>
@@ -710,6 +955,23 @@ export class CryptoMinerCard extends LitElement {
       }
 
       #fleet-hashrate-chart {
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: transparent;
+      }
+
+      .efficiency-chart-wrap {
+        position: absolute;
+        left: 52%;
+        top: 56%;
+        width: 35.5%;
+        height: 18%;
+        overflow: hidden;
+        z-index: 1;
+      }
+
+      #efficiency-chart {
         width: 100%;
         height: 100%;
         display: block;
@@ -824,22 +1086,6 @@ export class CryptoMinerCard extends LitElement {
         color: #f8ff00;
       }
 
-      .fleet-power-title {
-        position: absolute;
-        top: 59%;
-        left: 71%;
-        transform: translate(-50%, -50%);
-        color: #fff;
-        font-size: 1.151rem;
-        font-family: "AlienEncountersBold", sans-serif;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-        background: transparent;
-        border: none;
-        white-space: nowrap;
-      }
-
       .miners-title {
         position: absolute;
         top: 59%;
@@ -869,13 +1115,12 @@ export class CryptoMinerCard extends LitElement {
       }
 
       .hud-efficiency {
-        top: 64%;
-        left: 70%;
+        display: none;
       }
 
       .hud-power {
-        top: 70%;
-        left: 70%;
+        top: 92%;
+        left: 50%;
       }
 
       .hud-offline {
@@ -916,6 +1161,13 @@ export class CryptoMinerCard extends LitElement {
           height: 15.4%;
         }
 
+        .efficiency-chart-wrap {
+          left: 52%;
+          top: 56%;
+          width: 35.5%;
+          height: 17%;
+        }
+
         .card-title {
           font-size: 0.7rem;
           padding: 5px 10px;
@@ -932,8 +1184,7 @@ export class CryptoMinerCard extends LitElement {
           --mdc-icon-size: 0.96rem;
         }
 
-        .miners-title,
-        .fleet-power-title {
+        .miners-title {
           font-size: 1.03rem;
           top: 58.5%;
         }
@@ -954,8 +1205,8 @@ export class CryptoMinerCard extends LitElement {
         }
 
         .hud-power {
-          top: 70.5%;
-          left: 69%;
+          top: 92%;
+          left: 50%;
         }
 
         .hud-efficiency .chip-value,
@@ -989,6 +1240,13 @@ export class CryptoMinerCard extends LitElement {
           height: 14.6%;
         }
 
+        .efficiency-chart-wrap {
+          left: 52%;
+          top: 56%;
+          width: 35.5%;
+          height: 16.5%;
+        }
+
         .card-title {
           font-size: 0.6rem;
           padding: 4px 8px;
@@ -1005,8 +1263,7 @@ export class CryptoMinerCard extends LitElement {
           --mdc-icon-size: 0.85rem;
         }
 
-        .miners-title,
-        .fleet-power-title {
+        .miners-title {
           font-size: 0.9rem;
           top: 58%;
         }
@@ -1027,8 +1284,8 @@ export class CryptoMinerCard extends LitElement {
         }
 
         .hud-power {
-          top: 71%;
-          left: 68%;
+          top: 92%;
+          left: 50%;
         }
 
         .hud-efficiency .chip-value,

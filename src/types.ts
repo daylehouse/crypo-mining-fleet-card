@@ -11,7 +11,9 @@ export interface CryptoMinerCardConfig {
   aleo_rate_entity?: string;
   solo_pool_hashrate_entity?: string;
   fleet_hashrate_chart_entity?: string;
+  efficiency_chart_entity?: string;
   chart_span_minutes?: number;
+  efficiency_chart_span_minutes?: number;
 }
 
 interface HomeAssistantConnection {
