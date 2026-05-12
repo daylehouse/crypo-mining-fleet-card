@@ -398,10 +398,10 @@ export class CryptoMinerCard extends LitElement {
             display: true,
             text: chartTitle,
             color: "#ffffff",
-            font: { size: 12, family: "AlienEncountersBold" },
+            font: { size: 9, family: "AlienEncountersBold" },
             padding: {
-              top: 4,
-              bottom: 6
+              top: 2,
+              bottom: 3
             }
           },
           legend: {
@@ -908,7 +908,7 @@ export class CryptoMinerCard extends LitElement {
         .fleet-hashrate-chart-wrap {
           left: 50%;
           top: 26%;
-          width: 62%;
+          width: 68%;
           height: 15.4%;
         }
 
@@ -981,7 +981,7 @@ export class CryptoMinerCard extends LitElement {
         .fleet-hashrate-chart-wrap {
           left: 50%;
           top: 26.2%;
-          width: 58%;
+          width: 67%;
           height: 14.6%;
         }
 
