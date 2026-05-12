@@ -422,6 +422,7 @@ export class CryptoMinerCard extends LitElement {
               color: "#15ff00",
               font: { size: 10, family: "AlienEncountersRegular" },
               maxTicksLimit: 3,
+              stepSize: 2,
               callback: (tickValue) => Math.round(Number(tickValue)).toString()
             },
             grid: { color: "rgba(21,255,0,0.12)" }
@@ -907,7 +908,7 @@ export class CryptoMinerCard extends LitElement {
         .fleet-hashrate-chart-wrap {
           left: 50%;
           top: 26%;
-          width: 73%;
+          width: 62%;
           height: 15.4%;
         }
 
@@ -980,7 +981,7 @@ export class CryptoMinerCard extends LitElement {
         .fleet-hashrate-chart-wrap {
           left: 50%;
           top: 26.2%;
-          width: 76%;
+          width: 58%;
           height: 14.6%;
         }
 
