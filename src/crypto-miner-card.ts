@@ -41,6 +41,23 @@ if (!document.getElementById("crypto-miner-card-fonts")) {
 
 @customElement("crypto-miner-card")
 export class CryptoMinerCard extends LitElement {
+  private chartMarqueeIndex = 0;
+  private chartMarqueeInterval: number | null = null;
+
+  private startChartMarquee() {
+    if (this.chartMarqueeInterval !== null) return;
+    this.chartMarqueeInterval = window.setInterval(() => {
+      this.chartMarqueeIndex = (this.chartMarqueeIndex + 1) % 2;
+      this.requestUpdate();
+    }, 10000);
+  }
+
+  private stopChartMarquee() {
+    if (this.chartMarqueeInterval !== null) {
+      clearInterval(this.chartMarqueeInterval);
+      this.chartMarqueeInterval = null;
+    }
+  }
   @property({ attribute: false }) public hass?: HomeAssistantLike;
   private _config?: CryptoMinerCardConfig;
   private chart: Chart | null = null;
@@ -82,6 +99,7 @@ export class CryptoMinerCard extends LitElement {
     this.startChartUpdater();
     this.startEfficiencyChartUpdater();
     this.startPowerChartUpdater();
+    this.startChartMarquee();
   }
 
   disconnectedCallback(): void {
@@ -116,6 +134,8 @@ export class CryptoMinerCard extends LitElement {
       this.powerChart.destroy();
       this.powerChart = null;
     }
+
+    this.stopChartMarquee();
   }
 
   protected willUpdate(changedProperties: PropertyValues<this>): void {
@@ -653,12 +673,12 @@ export class CryptoMinerCard extends LitElement {
             text: chartTitle,
             color: "#ffffff",
             font: {
-              size: isMobileChart ? 7 : 12,
+              size: 12,
               family: "AlienEncountersBold"
             },
             padding: {
-              top: isMobileChart ? 2 : 4,
-              bottom: isMobileChart ? 3 : 6
+              top: isMobileChart ? 1 : 2,
+              bottom: isMobileChart ? 1 : 2
             }
           },
           legend: {
@@ -672,9 +692,15 @@ export class CryptoMinerCard extends LitElement {
               font: { size: 10, family: "AlienEncountersRegular" },
               maxTicksLimit: 4
             },
-            grid: { color: "rgb(1, 83, 97)" }
+            grid: { color: "rgba(159,251,255,0.12)" }
           },
           y: {
+            title: {
+              display: true,
+              text: "TH/s",
+              color: "#ffffff",
+              font: { size: 10, family: "AlienEncountersRegular" }
+            },
             ticks: {
               color: "#15ff00",
               font: { size: 10, family: "AlienEncountersRegular" },
@@ -755,7 +781,7 @@ export class CryptoMinerCard extends LitElement {
             text: chartTitle,
             color: "#ffffff",
             font: {
-              size: isMobileChart ? 8 : 12,
+              size: 12,
               family: "AlienEncountersBold"
             },
             padding: {
@@ -777,6 +803,12 @@ export class CryptoMinerCard extends LitElement {
             grid: { color: "rgba(159,251,255,0.12)" }
           },
           y: {
+            title: {
+              display: true,
+              text: "J/TH",
+              color: "#ffffff",
+              font: { size: 9, family: "AlienEncountersRegular" }
+            },
             ticks: {
               color: "#ffffff",
               font: { size: 9, family: "AlienEncountersRegular" },
@@ -857,7 +889,7 @@ export class CryptoMinerCard extends LitElement {
             text: chartTitle,
             color: "#ffffff",
             font: {
-              size: isMobileChart ? 8 : 12,
+              size: 12,
               family: "AlienEncountersBold"
             },
             padding: {
@@ -879,6 +911,12 @@ export class CryptoMinerCard extends LitElement {
             grid: { color: "rgba(255,255,255,0.12)" }
           },
           y: {
+            title: {
+              display: true,
+              text: "kW",
+              color: "#ffffff",
+              font: { size: 9, family: "AlienEncountersRegular" }
+            },
             ticks: {
               color: "#ffffff",
               font: { size: 9, family: "AlienEncountersRegular" },
@@ -1038,8 +1076,18 @@ export class CryptoMinerCard extends LitElement {
           <div class="stage-layer">
             <div class="card-title stage-item">${title}</div>
             ${this._config?.fleet_hashrate_chart_entity ? html`<div class="fleet-hashrate-chart-wrap stage-item"><canvas id="fleet-hashrate-chart" aria-label="Fleet hashrate history chart"></canvas></div>` : null}
-            ${this._config?.efficiency_chart_entity ? html`<div class="efficiency-chart-wrap stage-item"><canvas id="efficiency-chart" aria-label="Efficiency history chart"></canvas></div>` : null}
-            ${this._config?.fleet_power_entity ? html`<div class="power-chart-wrap stage-item"><canvas id="power-chart" aria-label="Power history chart"></canvas></div>` : null}
+            <div class="efficiency-power-marquee stage-item">
+              ${this._config?.efficiency_chart_entity ? html`
+                <div class="efficiency-chart-stack" style="opacity: ${this.chartMarqueeIndex === 0 ? 1 : 0}; transform: translateY(${this.chartMarqueeIndex === 0 ? '0%' : '-100%'}); pointer-events: ${this.chartMarqueeIndex === 0 ? 'auto' : 'none'};">
+                  <canvas id="efficiency-chart" aria-label="Efficiency history chart"></canvas>
+                </div>
+              ` : null}
+              ${this._config?.fleet_power_entity ? html`
+                <div class="power-chart-stack" style="opacity: ${this.chartMarqueeIndex === 1 ? 1 : 0}; transform: translateY(${this.chartMarqueeIndex === 1 ? '0%' : '100%'}); pointer-events: ${this.chartMarqueeIndex === 1 ? 'auto' : 'none'};">
+                  <canvas id="power-chart" aria-label="Power history chart"></canvas>
+                </div>
+              ` : null}
+            </div>
             <div class="sensor-chip stage-item hud-online"><ha-icon class="chip-icon chip-icon-online" icon="mdi:account-hard-hat"></ha-icon><span class="chip-label">Online:</span><span class="chip-value">${this._getEntityState(this._config?.online_miners_entity)}</span></div>
             <div class="sensor-chip stage-item hud-efficiency"><ha-icon class="chip-icon chip-icon-efficiency" icon="mdi:leaf"></ha-icon><span class="chip-label">Efficiency</span><span class="chip-value">${this._formatEfficiencyState(this._config?.fleet_energy_efficiency_entity)}</span></div>
             <div class="sensor-chip stage-item hud-power"><ha-icon class="chip-icon chip-icon-power" icon="mdi:power"></ha-icon><span class="chip-label">Power</span><span class="chip-value">${this._formatPowerState(this._config?.fleet_power_entity)}</span></div>
@@ -1070,23 +1118,28 @@ export class CryptoMinerCard extends LitElement {
         overflow: hidden;
       }
 
-      .card-shell {
-        position: relative;
-        overflow: hidden;
-        aspect-ratio: 16 / 18.9;
-      }
+        .card-shell {
+          position: relative;
+          overflow: hidden;
+          aspect-ratio: 16 / 17;
+        }
 
       .card-image {
-        display: block;
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
         object-position: center 35%;
+        z-index: 0;
+        pointer-events: none;
       }
 
       .stage-layer {
         position: absolute;
         inset: 0;
+        width: 100%;
+        height: 100%;
         background: transparent;
         pointer-events: none;
       }
@@ -1099,9 +1152,9 @@ export class CryptoMinerCard extends LitElement {
       .fleet-hashrate-chart-wrap {
         position: absolute;
         left: 8%;
-        top: 14%;
+        top: 12%;
         width: 40%;
-        height: 13.5%;
+        height: 14.5%;
         z-index: 1;
       }
 
@@ -1112,33 +1165,31 @@ export class CryptoMinerCard extends LitElement {
         background: transparent;
       }
 
-      .efficiency-chart-wrap {
+      .efficiency-power-marquee {
         position: absolute;
         left: 52%;
-        top: 56%;
-        width: 35.5%;
-        height: 18%;
+        top: 12%;
+        width: 40%;
+        height: 14.5%;
         overflow: hidden;
         z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
       }
 
-      #efficiency-chart {
+      .efficiency-chart-stack,
+      .power-chart-stack {
         width: 100%;
         height: 100%;
-        display: block;
-        background: transparent;
-      }
-
-      .power-chart-wrap {
         position: absolute;
-        left: 12%;
-        top: 56%;
-        width: 35.5%;
-        height: 18%;
-        overflow: hidden;
-        z-index: 1;
+        left: 0;
+        top: 0;
+        transition: opacity 0.5s, transform 0.5s;
       }
 
+      #efficiency-chart,
       #power-chart {
         width: 100%;
         height: 100%;

@@ -2,6 +2,10 @@ import { LitElement } from "lit";
 import type { PropertyValues } from "lit";
 import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
 export declare class CryptoMinerCard extends LitElement {
+    private chartMarqueeIndex;
+    private chartMarqueeInterval;
+    private startChartMarquee;
+    private stopChartMarquee;
     hass?: HomeAssistantLike;
     private _config?;
     private chart;
