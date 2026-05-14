@@ -653,7 +653,7 @@ export class CryptoMinerCard extends LitElement {
             text: chartTitle,
             color: "#ffffff",
             font: {
-              size: isMobileChart ? 9 : 14,
+              size: isMobileChart ? 7 : 12,
               family: "AlienEncountersBold"
             },
             padding: {
@@ -672,7 +672,7 @@ export class CryptoMinerCard extends LitElement {
               font: { size: 10, family: "AlienEncountersRegular" },
               maxTicksLimit: 4
             },
-            grid: { color: "rgba(159,251,255,0.12)" }
+            grid: { color: "rgb(1, 83, 97)" }
           },
           y: {
             ticks: {
@@ -1037,99 +1037,18 @@ export class CryptoMinerCard extends LitElement {
           <img class="card-image" src=${baseImage} alt="Crypto miner card image" />
           <div class="stage-layer">
             <div class="card-title stage-item">${title}</div>
-
-            ${this._config?.fleet_hashrate_chart_entity
-              ? html`
-                <div class="fleet-hashrate-chart-wrap stage-item">
-                  <canvas
-                    id="fleet-hashrate-chart"
-                    aria-label="Fleet hashrate history chart"
-                  ></canvas>
-                </div>
-              `
-              : null}
-
-            ${this._config?.efficiency_chart_entity
-              ? html`
-                <div class="efficiency-chart-wrap stage-item">
-                  <canvas
-                    id="efficiency-chart"
-                    aria-label="Efficiency history chart"
-                  ></canvas>
-                </div>
-              `
-              : null}
-
-            ${this._config?.fleet_power_entity
-              ? html`
-                <div class="power-chart-wrap stage-item">
-                  <canvas
-                    id="power-chart"
-                    aria-label="Power history chart"
-                  ></canvas>
-                </div>
-              `
-              : null}
-
-            <div class="sensor-chip stage-item hud-online">
-              <ha-icon class="chip-icon chip-icon-online" icon="mdi:account-hard-hat"></ha-icon>
-              <span class="chip-label">Online:</span>
-              <span class="chip-value">${this._getEntityState(this._config?.online_miners_entity)}</span>
-            </div>
-
-            <div class="sensor-chip stage-item hud-efficiency">
-              <ha-icon class="chip-icon chip-icon-efficiency" icon="mdi:leaf"></ha-icon>
-              <span class="chip-label">Efficiency</span>
-              <span class="chip-value">${this._formatEfficiencyState(this._config?.fleet_energy_efficiency_entity)}</span>
-            </div>
-
-            <div class="sensor-chip stage-item hud-power">
-              <ha-icon class="chip-icon chip-icon-power" icon="mdi:power"></ha-icon>
-              <span class="chip-label">Power</span>
-              <span class="chip-value">${this._formatPowerState(this._config?.fleet_power_entity)}</span>
-            </div>
-
-            <div class="sensor-chip stage-item hud-offline">
-              <ha-icon class="chip-icon chip-icon-offline" icon="mdi:account-hard-hat"></ha-icon>
-              <span class="chip-label">Offline:</span>
-              <span class="chip-value">${this._getEntityState(this._config?.offline_miners_entity)}</span>
-            </div>
-
-            <div class="sensor-chip stage-item hud-btc-rate">
-              <div class="chip-rate-head">
-                <span class="chip-label">BTC Hashrate</span>
-              </div>
-              <span class="chip-value">${this._formatHashrateState(this._config?.btc_rate_entity)}</span>
-            </div>
-
-            <div class="sensor-chip stage-item hud-bch-rate">
-              <div class="chip-rate-head">
-                <span class="chip-label">BCH Hashrate</span>
-              </div>
-              <span class="chip-value">${this._formatHashrateState(this._config?.bch_rate_entity)}</span>
-            </div>
-
-            <div class="sensor-chip stage-item hud-ltc-rate">
-              <div class="chip-rate-head">
-                <span class="chip-label">LTC Hashrate</span>
-              </div>
-              <span class="chip-value">${this._getEntityStateWithUnit(this._config?.ltc_rate_entity)}</span>
-            </div>
-
-            <div class="sensor-chip stage-item hud-aleo-rate">
-              <div class="chip-rate-head">
-                <span class="chip-label">ALEO Hashrate</span>
-              </div>
-              <span class="chip-value">${this._getEntityStateWithUnit(this._config?.aleo_rate_entity)}</span>
-            </div>
-
-            <div class="sensor-chip stage-item hud-solo-pool-hashrate">
-              <div class="chip-rate-head">
-                <span class="chip-label">Solo Pool</span>
-              </div>
-              <span class="chip-value">${this._getEntityStateWithUnit(this._config?.solo_pool_hashrate_entity)}</span>
-            </div>
-
+            ${this._config?.fleet_hashrate_chart_entity ? html`<div class="fleet-hashrate-chart-wrap stage-item"><canvas id="fleet-hashrate-chart" aria-label="Fleet hashrate history chart"></canvas></div>` : null}
+            ${this._config?.efficiency_chart_entity ? html`<div class="efficiency-chart-wrap stage-item"><canvas id="efficiency-chart" aria-label="Efficiency history chart"></canvas></div>` : null}
+            ${this._config?.fleet_power_entity ? html`<div class="power-chart-wrap stage-item"><canvas id="power-chart" aria-label="Power history chart"></canvas></div>` : null}
+            <div class="sensor-chip stage-item hud-online"><ha-icon class="chip-icon chip-icon-online" icon="mdi:account-hard-hat"></ha-icon><span class="chip-label">Online:</span><span class="chip-value">${this._getEntityState(this._config?.online_miners_entity)}</span></div>
+            <div class="sensor-chip stage-item hud-efficiency"><ha-icon class="chip-icon chip-icon-efficiency" icon="mdi:leaf"></ha-icon><span class="chip-label">Efficiency</span><span class="chip-value">${this._formatEfficiencyState(this._config?.fleet_energy_efficiency_entity)}</span></div>
+            <div class="sensor-chip stage-item hud-power"><ha-icon class="chip-icon chip-icon-power" icon="mdi:power"></ha-icon><span class="chip-label">Power</span><span class="chip-value">${this._formatPowerState(this._config?.fleet_power_entity)}</span></div>
+            <div class="sensor-chip stage-item hud-offline"><ha-icon class="chip-icon chip-icon-offline" icon="mdi:account-hard-hat"></ha-icon><span class="chip-label">Offline:</span><span class="chip-value">${this._getEntityState(this._config?.offline_miners_entity)}</span></div>
+            <div class="sensor-chip stage-item hud-btc-rate"><div class="chip-rate-head"><span class="chip-label">BTC Hashrate</span></div><span class="chip-value">${this._formatHashrateState(this._config?.btc_rate_entity)}</span></div>
+            <div class="sensor-chip stage-item hud-bch-rate"><div class="chip-rate-head"><span class="chip-label">BCH Hashrate</span></div><span class="chip-value">${this._formatHashrateState(this._config?.bch_rate_entity)}</span></div>
+            <div class="sensor-chip stage-item hud-ltc-rate"><div class="chip-rate-head"><span class="chip-label">LTC Hashrate</span></div><span class="chip-value">${this._getEntityStateWithUnit(this._config?.ltc_rate_entity)}</span></div>
+            <div class="sensor-chip stage-item hud-aleo-rate"><div class="chip-rate-head"><span class="chip-label">ALEO Hashrate</span></div><span class="chip-value">${this._getEntityStateWithUnit(this._config?.aleo_rate_entity)}</span></div>
+            <div class="sensor-chip stage-item hud-solo-pool-hashrate"><div class="chip-rate-head"><span class="chip-label">Solo Pool</span></div><span class="chip-value">${this._getEntityStateWithUnit(this._config?.solo_pool_hashrate_entity)}</span></div>
             <div class="miners-title stage-item">Miners</div>
           </div>
         </div>
@@ -1179,11 +1098,10 @@ export class CryptoMinerCard extends LitElement {
 
       .fleet-hashrate-chart-wrap {
         position: absolute;
-        left: 50%;
-        top: 25.8%;
-        width: 71%;
-        height: 16%;
-        transform: translate(-50%, -50%);
+        left: 8%;
+        top: 14%;
+        width: 40%;
+        height: 13.5%;
         z-index: 1;
       }
 
@@ -1230,9 +1148,10 @@ export class CryptoMinerCard extends LitElement {
 
       .card-title {
         position: absolute;
-        top: 9%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        top: 4%;
+        left: 35%;
+        width: 30%;
+        height: 5%;
         border-radius: 999px;
         padding: 6px 12px;
         color: #fff;
@@ -1243,6 +1162,9 @@ export class CryptoMinerCard extends LitElement {
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
         background: transparent;
         border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .sensor-chip {
@@ -1257,7 +1179,6 @@ export class CryptoMinerCard extends LitElement {
         padding: 6px 8px;
         font-size: 0.927rem;
         line-height: 1;
-        transform: translate(-50%, -50%);
         border: none;
       }
 
@@ -1350,6 +1271,8 @@ export class CryptoMinerCard extends LitElement {
       .hud-online {
         top: 83%;
         left: 35.5%;
+        width: 15%;
+        height: 6%;
       }
 
       .hud-efficiency {
@@ -1359,207 +1282,53 @@ export class CryptoMinerCard extends LitElement {
       .hud-power {
         top: 95%;
         left: 78.5%;
+        width: 15%;
+        height: 6%;
       }
 
       .hud-offline {
         top: 83%;
         left: 65.5%;
+        width: 15%;
+        height: 6%;
       }
 
       .hud-btc-rate {
         top: 42.5%;
         left: 23%;
+        width: 15%;
+        height: 6%;
       }
 
       .hud-bch-rate {
         top: 48%;
         left: 23%;
+        width: 15%;
+        height: 6%;
       }
 
       .hud-ltc-rate {
         top: 42.5%;
         left: 77%;
+        width: 15%;
+        height: 6%;
       }
 
       .hud-aleo-rate {
         top: 48%;
         left: 77%;
+        width: 15%;
+        height: 6%;
       }
 
       .hud-solo-pool-hashrate {
         top: 45.25%;
         left: 50%;
+        width: 15%;
+        height: 6%;
       }
 
-      @media (max-width: 640px) {
-        .fleet-hashrate-chart-wrap {
-          left: 50%;
-          top: 26%;
-          width: 70%;
-          height: 15.4%;
-        }
-
-        .efficiency-chart-wrap {
-          left: 52%;
-          top: 56%;
-          width: 35.5%;
-          height: 17%;
-        }
-
-        .power-chart-wrap {
-          left: 12%;
-          top: 56%;
-          width: 35.5%;
-          height: 17%;
-        }
-
-        .card-title {
-          font-size: 0.7rem;
-          padding: 5px 10px;
-        }
-
-        .sensor-chip {
-          font-size: 0.8rem;
-          gap: 4px;
-          padding: 4px 6px;
-        }
-
-        .chip-icon {
-          font-size: 0.96rem;
-          --mdc-icon-size: 0.96rem;
-        }
-
-        .miners-title {
-          display: none;
-        }
-
-        .hud-online {
-          top: 83%;
-          left: 36%;
-        }
-
-        .hud-offline {
-          top: 83%;
-          left: 66%;
-        }
-
-        .hud-efficiency {
-          top: 64.5%;
-          left: 69%;
-        }
-
-        .hud-power {
-          top: 95%;
-          left: 78.5%;
-        }
-
-        .hud-efficiency .chip-value,
-        .hud-power .chip-value {
-          font-size: 0.76rem;
-        }
-
-        .hud-btc-rate,
-        .hud-bch-rate,
-        .hud-ltc-rate,
-        .hud-aleo-rate,
-        .hud-solo-pool-hashrate {
-          font-size: 0.69rem;
-          width: 24%;
-          line-height: 1.1;
-          gap: 3px;
-        }
-
-        .hud-solo-pool-hashrate {
-          width: 18%;
-          font-size: 0.71rem;
-          top: 45.5%;
-        }
-      }
-
-      @media (max-width: 600px) {
-        .fleet-hashrate-chart-wrap {
-          left: 50%;
-          top: 26.2%;
-          width: 71%;
-          height: 14.6%;
-        }
-
-        .efficiency-chart-wrap {
-          left: 52%;
-          top: 56%;
-          width: 35.5%;
-          height: 16.5%;
-        }
-
-        .power-chart-wrap {
-          left: 12%;
-          top: 56%;
-          width: 35.5%;
-          height: 16.5%;
-        }
-
-        .card-title {
-          font-size: 0.6rem;
-          padding: 4px 8px;
-        }
-
-        .sensor-chip {
-          font-size: 0.7rem;
-          gap: 3px;
-          padding: 3px 5px;
-        }
-
-        .chip-icon {
-          font-size: 0.85rem;
-          --mdc-icon-size: 0.85rem;
-        }
-
-        .miners-title {
-          display: none;
-        }
-
-        .hud-online {
-          top: 78%;
-          left: 36%;
-        }
-
-        .hud-offline {
-          top: 78%;
-          left: 66%;
-        }
-
-        .hud-efficiency {
-          top: 65%;
-          left: 68%;
-        }
-
-        .hud-power {
-          top: 95%;
-          left: 78.5%;
-        }
-
-        .hud-efficiency .chip-value,
-        .hud-power .chip-value {
-          font-size: 0.65rem;
-        }
-
-        .hud-btc-rate,
-        .hud-bch-rate,
-        .hud-ltc-rate,
-        .hud-aleo-rate,
-        .hud-solo-pool-hashrate {
-          font-size: 0.6rem;
-          width: 22%;
-          line-height: 1;
-          gap: 2px;
-        }
-
-        .hud-solo-pool-hashrate {
-          width: 16%;
-          font-size: 0.62rem;
-          top: 45.25%;
-        }
-      }
+      /* Mobile-specific CSS removed for desktop-only styling */
     `;
   }
 }
