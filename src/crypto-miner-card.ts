@@ -49,6 +49,14 @@ export class CryptoMinerCard extends LitElement {
     this.chartMarqueeInterval = window.setInterval(() => {
       this.chartMarqueeIndex = (this.chartMarqueeIndex + 1) % 2;
       this.requestUpdate();
+      // Force chart animation on rotation
+      setTimeout(() => {
+        if (this.chartMarqueeIndex === 0 && this.efficiencyChart) {
+          this.efficiencyChart.update();
+        } else if (this.chartMarqueeIndex === 1 && this.powerChart) {
+          this.powerChart.update();
+        }
+      }, 0);
     }, 10000);
   }
 
@@ -666,7 +674,7 @@ export class CryptoMinerCard extends LitElement {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: false,
+        animation: {},
         plugins: {
           title: {
             display: true,
@@ -766,7 +774,7 @@ export class CryptoMinerCard extends LitElement {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: false,
+        animation: {},
         layout: {
           padding: {
             left: isMobileChart ? 2 : 4,
@@ -874,7 +882,7 @@ export class CryptoMinerCard extends LitElement {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: false,
+        animation: {},
         layout: {
           padding: {
             left: isMobileChart ? 2 : 4,
@@ -1167,7 +1175,7 @@ export class CryptoMinerCard extends LitElement {
 
       .efficiency-power-marquee {
         position: absolute;
-        left: 52%;
+        left: 51%;
         top: 12%;
         width: 40%;
         height: 14.5%;
