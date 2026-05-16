@@ -4,6 +4,7 @@ import { LitElement } from "lit";
 import type { PropertyValues } from "lit";
 import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
 export declare class CryptoMinerCard extends LitElement {
+    connectedCallback(): void;
     private btcChart;
     private btcChartData;
     private bchChart;
@@ -33,7 +34,6 @@ export declare class CryptoMinerCard extends LitElement {
     private powerChartUpdateInterval;
     private lastPowerHistoryFetch;
     setConfig(config: CryptoMinerCardConfig): void;
-    connectedCallback(): void;
     disconnectedCallback(): void;
     protected willUpdate(changedProperties: PropertyValues<this>): void;
     protected updated(): void;

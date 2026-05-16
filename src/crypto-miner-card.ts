@@ -1,3 +1,36 @@
+// --- FONT LOADING (bitcoin-miner-card pattern) ---
+const alienRegularFontUrl = new URL("Alien-Encounters-Solid-Regular.ttf", import.meta.url).toString();
+const alienBoldFontUrl = new URL("Alien-Encounters-Solid-Bold.ttf", import.meta.url).toString();
+const globalFontStyleId = "crypto-mining-fleet-card-fonts";
+
+function ensureAlienFontsRegistered(): void {
+  if (typeof document === "undefined") return;
+  if (!document.getElementById(globalFontStyleId)) {
+    const style = document.createElement("style");
+    style.id = globalFontStyleId;
+    style.textContent = `
+      @font-face {
+        font-family: "Crypto Mining Fleet Alien Local";
+        src: url('${alienRegularFontUrl}') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Crypto Mining Fleet Alien Local";
+        src: url('${alienBoldFontUrl}') format('truetype');
+        font-weight: 700;
+        font-style: normal;
+        font-display: block;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  if ("fonts" in document) {
+    void document.fonts.load('400 1em "Crypto Mining Fleet Alien Local"');
+    void document.fonts.load('700 1em "Crypto Mining Fleet Alien Local"');
+  }
+}
 import "./Alien-Encounters-Solid-Regular.ttf";
 import "./Alien-Encounters-Solid-Bold.ttf";
 const chartUpdateIntervalMs = 60000;
@@ -21,6 +54,22 @@ import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
 
 @customElement("crypto-miner-card")
 export class CryptoMinerCard extends LitElement {
+  public connectedCallback(): void {
+    super.connectedCallback();
+    ensureAlienFontsRegistered();
+    void this.fetchAndPopulateHashrateHistory(true);
+    void this.fetchAndPopulateEfficiencyHistory(true);
+    void this.fetchAndPopulatePowerHistory(true);
+    this.startChartUpdater();
+    this.startEfficiencyChartUpdater();
+    this.startPowerChartUpdater();
+    this.startChartMarquee();
+    // Coin chart data
+    void this.fetchAndPopulateCoinHistory(this._config?.btc_rate_entity, this.btcChartData, () => this.renderCoinChart("btc-hashrate-chart", this.btcChart, this.btcChartData, "#ff8c00", "rgba(255,140,0,0.15)", "BTC Hashrate", "TH/s", (c) => { this.btcChart = c; }));
+    void this.fetchAndPopulateCoinHistory(this._config?.bch_rate_entity, this.bchChartData, () => this.renderCoinChart("bch-hashrate-chart", this.bchChart, this.bchChartData, "#39ff14", "rgba(57,255,20,0.15)", "BCH Hashrate", "TH/s", (c) => { this.bchChart = c; }));
+    void this.fetchAndPopulateCoinHistory(this._config?.ltc_rate_entity, this.ltcChartData, () => this.renderCoinChart("ltc-hashrate-chart", this.ltcChart, this.ltcChartData, "#00f5ff", "rgba(0,245,255,0.15)", "LTC Hashrate", "TH/s", (c) => { this.ltcChart = c; }));
+    void this.fetchAndPopulateCoinHistory(this._config?.aleo_rate_entity, this.aleoChartData, () => this.renderCoinChart("aleo-hashrate-chart", this.aleoChart, this.aleoChartData, "#f8ff00", "rgba(248,255,0,0.15)", "ALEO Hashrate", "TH/s", (c) => { this.aleoChart = c; }));
+  }
   // ...existing code...
 
   // Coin chart state
@@ -81,6 +130,7 @@ export class CryptoMinerCard extends LitElement {
     if (!canvas) return;
     const context = canvas.getContext("2d");
     if (!context) return;
+    const fontStack = getComputedStyle(this).getPropertyValue('--cmf-font-stack').trim() || '"Crypto Mining Fleet Alien Local", "AlienEncountersRegular", "AlienEncountersBold", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
     const chartConfig: ChartConfiguration<"line", number[], string> = {
       type: "line",
       data: {
@@ -107,19 +157,19 @@ export class CryptoMinerCard extends LitElement {
             display: true,
             text: label,
             color: "#ffffff",
-            font: { size: 12, family: "AlienEncountersBold" },
+            font: { size: 12, family: fontStack },
             padding: { top: 2, bottom: 2 }
           },
           legend: { display: false }
         },
         scales: {
           x: {
-            ticks: { color: color, font: { size: 10, family: "AlienEncountersRegular" }, maxTicksLimit: 4 },
+            ticks: { color: color, font: { size: 10, family: fontStack }, maxTicksLimit: 4 },
             grid: { color: "rgba(159,251,255,0.12)" }
           },
           y: {
-            title: { display: true, text: unit, color: "#ffffff", font: { size: 10, family: "AlienEncountersRegular" } },
-            ticks: { color: color, font: { size: 10, family: "AlienEncountersRegular" }, maxTicksLimit: 3, callback: (tickValue) => Math.round(Number(tickValue)).toString() },
+            title: { display: true, text: unit, color: "#ffffff", font: { size: 10, family: fontStack } },
+            ticks: { color: color, font: { size: 10, family: fontStack }, maxTicksLimit: 3, callback: (tickValue) => Math.round(Number(tickValue)).toString() },
             grid: { color: "rgba(21,255,0,0.12)" }
           }
         }
@@ -195,21 +245,7 @@ export class CryptoMinerCard extends LitElement {
     void this.fetchAndPopulateHashrateHistory(true);
   }
 
-  connectedCallback(): void {
-    super.connectedCallback();
-    void this.fetchAndPopulateHashrateHistory(true);
-    void this.fetchAndPopulateEfficiencyHistory(true);
-    void this.fetchAndPopulatePowerHistory(true);
-    this.startChartUpdater();
-    this.startEfficiencyChartUpdater();
-    this.startPowerChartUpdater();
-    this.startChartMarquee();
-    // Coin chart data
-    void this.fetchAndPopulateCoinHistory(this._config?.btc_rate_entity, this.btcChartData, () => this.renderCoinChart("btc-hashrate-chart", this.btcChart, this.btcChartData, "#ff8c00", "rgba(255,140,0,0.15)", "BTC Hashrate", "TH/s", (c) => { this.btcChart = c; }));
-    void this.fetchAndPopulateCoinHistory(this._config?.bch_rate_entity, this.bchChartData, () => this.renderCoinChart("bch-hashrate-chart", this.bchChart, this.bchChartData, "#39ff14", "rgba(57,255,20,0.15)", "BCH Hashrate", "TH/s", (c) => { this.bchChart = c; }));
-    void this.fetchAndPopulateCoinHistory(this._config?.ltc_rate_entity, this.ltcChartData, () => this.renderCoinChart("ltc-hashrate-chart", this.ltcChart, this.ltcChartData, "#00f5ff", "rgba(0,245,255,0.15)", "LTC Hashrate", "TH/s", (c) => { this.ltcChart = c; }));
-    void this.fetchAndPopulateCoinHistory(this._config?.aleo_rate_entity, this.aleoChartData, () => this.renderCoinChart("aleo-hashrate-chart", this.aleoChart, this.aleoChartData, "#f8ff00", "rgba(248,255,0,0.15)", "ALEO Hashrate", "TH/s", (c) => { this.aleoChart = c; }));
-  }
+
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
@@ -1231,6 +1267,13 @@ export class CryptoMinerCard extends LitElement {
   static get styles() {
     return [
       css`
+        :host {
+          --cmf-font-stack: "Crypto Mining Fleet Alien Local", "AlienEncountersRegular", "AlienEncountersBold", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+          font-family: var(--cmf-font-stack) !important;
+        }
+        :host *, ha-card, ha-card * {
+          font-family: var(--cmf-font-stack) !important;
+        }
         .ping-hud-group {
           position: absolute;
           left: 0;
