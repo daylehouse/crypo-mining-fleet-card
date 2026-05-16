@@ -1,7 +1,19 @@
+import "./Alien-Encounters-Solid-Regular.ttf";
+import "./Alien-Encounters-Solid-Bold.ttf";
 import { LitElement } from "lit";
 import type { PropertyValues } from "lit";
 import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
 export declare class CryptoMinerCard extends LitElement {
+    private btcChart;
+    private btcChartData;
+    private bchChart;
+    private bchChartData;
+    private ltcChart;
+    private ltcChartData;
+    private aleoChart;
+    private aleoChartData;
+    private fetchAndPopulateCoinHistory;
+    private renderCoinChart;
     private chartMarqueeIndex;
     private chartMarqueeInterval;
     private startChartMarquee;
@@ -88,7 +100,7 @@ export declare class CryptoMinerCard extends LitElement {
     private _formatHashrateState;
     private _getEntityFriendlyName;
     protected render(): import("lit-html").TemplateResult<1>;
-    static get styles(): import("lit").CSSResult;
+    static get styles(): import("lit").CSSResult[];
 }
 declare global {
     interface HTMLElementTagNameMap {

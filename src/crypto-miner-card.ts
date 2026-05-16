@@ -1,13 +1,5 @@
-import { LitElement, html, css } from "lit";
-import type { PropertyValues } from "lit";
-import type { ChartConfiguration } from "chart.js";
-import Chart from "chart.js/auto";
-import { customElement, property } from "lit/decorators.js";
-import baseImage from "./baselayer.png";
-import alienRegular from "./Alien-Encounters-Solid-Regular.ttf";
-import alienBold from "./Alien-Encounters-Solid-Bold.ttf";
-import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
-
+import "./Alien-Encounters-Solid-Regular.ttf";
+import "./Alien-Encounters-Solid-Bold.ttf";
 const chartUpdateIntervalMs = 60000;
 const chartHistoryThrottleMs = 60000;
 
@@ -17,30 +9,134 @@ interface HistoryPoint {
   last_updated_ts?: number;
   state?: string;
 }
-
-// Inject @font-face into document head so fonts work across Shadow DOM boundaries
-if (!document.getElementById("crypto-miner-card-fonts")) {
-  const style = document.createElement("style");
-  style.id = "crypto-miner-card-fonts";
-  style.textContent = `
-    @font-face {
-      font-family: "AlienEncountersRegular";
-      src: url("${alienRegular}") format("truetype");
-      font-weight: 400;
-      font-style: normal;
-    }
-    @font-face {
-      font-family: "AlienEncountersBold";
-      src: url("${alienBold}") format("truetype");
-      font-weight: 700;
-      font-style: normal;
-    }
-  `;
-  document.head.appendChild(style);
-}
+import { LitElement, html, css, unsafeCSS } from "lit";
+import type { PropertyValues } from "lit";
+import type { ChartConfiguration } from "chart.js";
+import Chart from "chart.js/auto";
+import { customElement, property } from "lit/decorators.js";
+import baseImage from "./baselayer.png";
+import alienRegular from "./Alien-Encounters-Solid-Regular.ttf";
+import alienBold from "./Alien-Encounters-Solid-Bold.ttf";
+import { CryptoMinerCardConfig, HomeAssistantLike } from "./types";
 
 @customElement("crypto-miner-card")
 export class CryptoMinerCard extends LitElement {
+  // ...existing code...
+
+  // Coin chart state
+  private btcChart: Chart | null = null;
+  private btcChartData: { labels: string[]; values: number[] } = { labels: [], values: [] };
+  private bchChart: Chart | null = null;
+  private bchChartData: { labels: string[]; values: number[] } = { labels: [], values: [] };
+  private ltcChart: Chart | null = null;
+  private ltcChartData: { labels: string[]; values: number[] } = { labels: [], values: [] };
+  private aleoChart: Chart | null = null;
+  private aleoChartData: { labels: string[]; values: number[] } = { labels: [], values: [] };
+
+  // Fetch and populate coin hashrate history
+  private async fetchAndPopulateCoinHistory(entity: string | undefined, chartData: { labels: string[]; values: number[] }, renderFn: () => void) {
+    if (!this.hass || !entity || !this.hass.connection) return;
+    const end = new Date();
+    const spanMinutes = this.getChartSpanMinutes();
+    const start = new Date(end.getTime() - spanMinutes * 60 * 1000);
+    try {
+      const historyResult = await this.hass.connection.sendMessagePromise<unknown>({
+        type: "history/history_during_period",
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        entity_ids: [entity],
+        minimal_response: true,
+        no_attributes: true
+      });
+      const historyPoints = this.extractHistoryPoints(historyResult, entity);
+      chartData.labels = [];
+      chartData.values = [];
+      for (let i = 0; i < historyPoints.length; i += 1) {
+        const point = historyPoints[i];
+        const rawTimestamp = point.lu ?? point.last_updated_ts;
+        const timestampMs = typeof rawTimestamp === "number" ? rawTimestamp * 1000 : NaN;
+        const ts = new Date(timestampMs);
+        const label = Number.isFinite(ts.getTime())
+          ? ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : `${i}`;
+        const value = parseFloat(point.s ?? point.state ?? "NaN");
+        if (!Number.isNaN(value)) {
+          chartData.labels.push(label);
+          chartData.values.push(value);
+        }
+      }
+      if (chartData.labels.length === 0) {
+        chartData.labels.push("Now");
+        chartData.values.push(parseFloat(this._getEntityState(entity)));
+      }
+      renderFn();
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(`Failed to fetch history for ${entity}`, error);
+    }
+  }
+
+  private renderCoinChart(canvasId: string, chart: Chart | null, chartData: { labels: string[]; values: number[] }, color: string, bg: string, label: string, unit: string, setChart: (c: Chart) => void) {
+    const canvas = this.renderRoot?.querySelector(`#${canvasId}`) as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    const chartConfig: ChartConfiguration<"line", number[], string> = {
+      type: "line",
+      data: {
+        labels: chartData.labels,
+        datasets: [
+          {
+            label,
+            data: chartData.values,
+            borderColor: color,
+            backgroundColor: bg,
+            tension: 0.28,
+            pointRadius: 0,
+            borderWidth: 2,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {},
+        plugins: {
+          title: {
+            display: true,
+            text: label,
+            color: "#ffffff",
+            font: { size: 12, family: "AlienEncountersBold" },
+            padding: { top: 2, bottom: 2 }
+          },
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            ticks: { color: color, font: { size: 10, family: "AlienEncountersRegular" }, maxTicksLimit: 4 },
+            grid: { color: "rgba(159,251,255,0.12)" }
+          },
+          y: {
+            title: { display: true, text: unit, color: "#ffffff", font: { size: 10, family: "AlienEncountersRegular" } },
+            ticks: { color: color, font: { size: 10, family: "AlienEncountersRegular" }, maxTicksLimit: 3, callback: (tickValue) => Math.round(Number(tickValue)).toString() },
+            grid: { color: "rgba(21,255,0,0.12)" }
+          }
+        }
+      }
+    };
+    if (!chart) {
+      setChart(new Chart(context, chartConfig));
+      return;
+    }
+    chart.data.labels = chartData.labels;
+    chart.data.datasets[0].data = chartData.values;
+    if (chart.options.plugins?.title) {
+      chart.options.plugins.title.text = label;
+    }
+    chart.update("none");
+  }
+// (imports and font-face logic already present above)
   private chartMarqueeIndex = 0;
   private chartMarqueeInterval: number | null = null;
 
@@ -108,6 +204,11 @@ export class CryptoMinerCard extends LitElement {
     this.startEfficiencyChartUpdater();
     this.startPowerChartUpdater();
     this.startChartMarquee();
+    // Coin chart data
+    void this.fetchAndPopulateCoinHistory(this._config?.btc_rate_entity, this.btcChartData, () => this.renderCoinChart("btc-hashrate-chart", this.btcChart, this.btcChartData, "#ff8c00", "rgba(255,140,0,0.15)", "BTC Hashrate", "TH/s", (c) => { this.btcChart = c; }));
+    void this.fetchAndPopulateCoinHistory(this._config?.bch_rate_entity, this.bchChartData, () => this.renderCoinChart("bch-hashrate-chart", this.bchChart, this.bchChartData, "#39ff14", "rgba(57,255,20,0.15)", "BCH Hashrate", "TH/s", (c) => { this.bchChart = c; }));
+    void this.fetchAndPopulateCoinHistory(this._config?.ltc_rate_entity, this.ltcChartData, () => this.renderCoinChart("ltc-hashrate-chart", this.ltcChart, this.ltcChartData, "#00f5ff", "rgba(0,245,255,0.15)", "LTC Hashrate", "TH/s", (c) => { this.ltcChart = c; }));
+    void this.fetchAndPopulateCoinHistory(this._config?.aleo_rate_entity, this.aleoChartData, () => this.renderCoinChart("aleo-hashrate-chart", this.aleoChart, this.aleoChartData, "#f8ff00", "rgba(248,255,0,0.15)", "ALEO Hashrate", "TH/s", (c) => { this.aleoChart = c; }));
   }
 
   disconnectedCallback(): void {
@@ -143,6 +244,12 @@ export class CryptoMinerCard extends LitElement {
       this.powerChart = null;
     }
 
+    // Destroy coin charts
+    if (this.btcChart) { this.btcChart.destroy(); this.btcChart = null; }
+    if (this.bchChart) { this.bchChart.destroy(); this.bchChart = null; }
+    if (this.ltcChart) { this.ltcChart.destroy(); this.ltcChart = null; }
+    if (this.aleoChart) { this.aleoChart.destroy(); this.aleoChart = null; }
+
     this.stopChartMarquee();
   }
 
@@ -158,6 +265,11 @@ export class CryptoMinerCard extends LitElement {
     this.renderHashrateChart();
     this.renderEfficiencyChart();
     this.renderPowerChart();
+    // Coin charts
+    this.renderCoinChart("btc-hashrate-chart", this.btcChart, this.btcChartData, "#ff8c00", "rgba(255,140,0,0.15)", "BTC Hashrate", "TH/s", (c) => { this.btcChart = c; });
+    this.renderCoinChart("bch-hashrate-chart", this.bchChart, this.bchChartData, "#39ff14", "rgba(57,255,20,0.15)", "BCH Hashrate", "TH/s", (c) => { this.bchChart = c; });
+    this.renderCoinChart("ltc-hashrate-chart", this.ltcChart, this.ltcChartData, "#00f5ff", "rgba(0,245,255,0.15)", "LTC Hashrate", "TH/s", (c) => { this.ltcChart = c; });
+    this.renderCoinChart("aleo-hashrate-chart", this.aleoChart, this.aleoChartData, "#f8ff00", "rgba(248,255,0,0.15)", "ALEO Hashrate", "TH/s", (c) => { this.aleoChart = c; });
   }
 
   getCardSize(): number {
@@ -1095,300 +1207,407 @@ export class CryptoMinerCard extends LitElement {
                   <canvas id="power-chart" aria-label="Power history chart"></canvas>
                 </div>
               ` : null}
+              <div class="ping-hud-group">
+                <div class="sensor-chip stage-item hud-online"><ha-icon class="chip-icon chip-icon-online" icon="mdi:account-hard-hat"></ha-icon><span class="chip-label">Online:</span><span class="chip-value">${this._getEntityState(this._config?.online_miners_entity)}</span></div>
+                <div class="sensor-chip stage-item hud-offline"><ha-icon class="chip-icon chip-icon-offline" icon="mdi:account-hard-hat"></ha-icon><span class="chip-label">Offline:</span><span class="chip-value">${this._getEntityState(this._config?.offline_miners_entity)}</span></div>
+                <div class="sensor-chip stage-item hud-power"><ha-icon class="chip-icon chip-icon-power" icon="mdi:power"></ha-icon><span class="chip-label">Power</span><span class="chip-value">${this._formatPowerState(this._config?.fleet_power_entity)}</span></div>
+              </div>
             </div>
-            <div class="sensor-chip stage-item hud-online"><ha-icon class="chip-icon chip-icon-online" icon="mdi:account-hard-hat"></ha-icon><span class="chip-label">Online:</span><span class="chip-value">${this._getEntityState(this._config?.online_miners_entity)}</span></div>
+            <!-- Coin charts as independent stage items -->
+            <div class="coin-chart-frame stage-item coin-chart-btc"><canvas id="btc-hashrate-chart" aria-label="BTC hashrate chart"></canvas></div>
+            <div class="coin-chart-frame stage-item coin-chart-bch"><canvas id="bch-hashrate-chart" aria-label="BCH hashrate chart"></canvas></div>
+            <div class="coin-chart-frame stage-item coin-chart-ltc"><canvas id="ltc-hashrate-chart" aria-label="LTC hashrate chart"></canvas></div>
+            <div class="coin-chart-frame stage-item coin-chart-aleo"><canvas id="aleo-hashrate-chart" aria-label="ALEO hashrate chart"></canvas></div>
             <div class="sensor-chip stage-item hud-efficiency"><ha-icon class="chip-icon chip-icon-efficiency" icon="mdi:leaf"></ha-icon><span class="chip-label">Efficiency</span><span class="chip-value">${this._formatEfficiencyState(this._config?.fleet_energy_efficiency_entity)}</span></div>
-            <div class="sensor-chip stage-item hud-power"><ha-icon class="chip-icon chip-icon-power" icon="mdi:power"></ha-icon><span class="chip-label">Power</span><span class="chip-value">${this._formatPowerState(this._config?.fleet_power_entity)}</span></div>
-            <div class="sensor-chip stage-item hud-offline"><ha-icon class="chip-icon chip-icon-offline" icon="mdi:account-hard-hat"></ha-icon><span class="chip-label">Offline:</span><span class="chip-value">${this._getEntityState(this._config?.offline_miners_entity)}</span></div>
-            <div class="sensor-chip stage-item hud-btc-rate"><div class="chip-rate-head"><span class="chip-label">BTC Hashrate</span></div><span class="chip-value">${this._formatHashrateState(this._config?.btc_rate_entity)}</span></div>
-            <div class="sensor-chip stage-item hud-bch-rate"><div class="chip-rate-head"><span class="chip-label">BCH Hashrate</span></div><span class="chip-value">${this._formatHashrateState(this._config?.bch_rate_entity)}</span></div>
-            <div class="sensor-chip stage-item hud-ltc-rate"><div class="chip-rate-head"><span class="chip-label">LTC Hashrate</span></div><span class="chip-value">${this._getEntityStateWithUnit(this._config?.ltc_rate_entity)}</span></div>
-            <div class="sensor-chip stage-item hud-aleo-rate"><div class="chip-rate-head"><span class="chip-label">ALEO Hashrate</span></div><span class="chip-value">${this._getEntityStateWithUnit(this._config?.aleo_rate_entity)}</span></div>
-            <div class="sensor-chip stage-item hud-solo-pool-hashrate"><div class="chip-rate-head"><span class="chip-label">Solo Pool</span></div><span class="chip-value">${this._getEntityStateWithUnit(this._config?.solo_pool_hashrate_entity)}</span></div>
+            ${this._config?.fleet_hashrate_chart_entity ? html`<div class="solo-pool-hud-in-chart"><div class="sensor-chip stage-item hud-solo-pool-hashrate"><div class="chip-rate-head"><span class="chip-label">Solo Pool</span></div><span class="chip-value">${this._getEntityStateWithUnit(this._config?.solo_pool_hashrate_entity)}</span></div></div>` : null}
             <div class="miners-title stage-item">Miners</div>
           </div>
         </div>
       </ha-card>
+
     `;
   }
 
   static get styles() {
-    return css`
-      :host {
-        margin: 0;
-        padding: 0;
-        display: block;
-        font-family: "AlienEncountersRegular", sans-serif;
-      }
-
-      ha-card {
-        padding: 0;
-        overflow: hidden;
-      }
-
-        .card-shell {
-          position: relative;
-          overflow: hidden;
-          aspect-ratio: 16 / 17;
+    return [
+      css`
+        .ping-hud-group {
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: auto;
+          display: flex;
+          flex-direction: row;
+          align-items: flex-end;
+          justify-content: flex-start;
+          gap: 16px;
+          pointer-events: none;
+          z-index: 10;
+          padding: 0 0 12px 12px;
         }
 
-      .card-image {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center 35%;
-        z-index: 0;
-        pointer-events: none;
-      }
+        .ping-hud-group .sensor-chip {
+          pointer-events: auto;
+          margin-bottom: 2px;
+        }
 
-      .stage-layer {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        background: transparent;
-        pointer-events: none;
-      }
+        .solo-pool-hud-in-chart {
+          position: absolute;
+          left: 50%;
+          bottom: 0;
+          transform: translateX(-50%);
+          width: 40%;
+          height: auto;
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          z-index: 10;
+          padding-bottom: 12px;
+        }
+        :host {
+          margin: 0;
+          padding: 0;
+          display: block;
+          font-family: "AlienEncountersRegular", sans-serif;
+        }
+        /* Fonts must be in shadow DOM for Chart.js and CSS to see them */
+        @font-face {
+          font-family: "AlienEncountersRegular";
+          src: url("assets/Alien-Encounters-Solid-Regular.ttf") format('truetype');
+          font-display: swap;
+        }
+        @font-face {
+          font-family: "AlienEncountersBold";
+          src: url("assets/Alien-Encounters-Solid-Bold.ttf") format('truetype');
+          font-display: swap;
+        }
+        :host {
 
-      .stage-item {
-        pointer-events: auto;
-        z-index: 2;
-      }
+        /* Coin charts row and frames - match main chart size and aspect */
 
-      .fleet-hashrate-chart-wrap {
-        position: absolute;
-        left: 8%;
-        top: 12%;
-        width: 40%;
-        height: 14.5%;
-        z-index: 1;
-      }
+        /* Coin charts: match Hashrate chart size and spacing */
+        .coin-chart-btc {
+          position: absolute;
+          left: 8%;
+          top: 28%; /* Just below main charts */
+          width: 40%;
+          height: 14.5%;
+          z-index: 1;
+        }
+        .coin-chart-bch {
+          position: absolute;
+          left: 8%;
+          top: 44.5%; /* 28% + 14.5% + 2% gap */
+          width: 40%;
+          height: 14.5%;
+          z-index: 1;
+        }
+        .coin-chart-ltc {
+          position: absolute;
+          left: 8%;
+          top: 61%; /* 44.5% + 14.5% + 2% gap */
+          width: 40%;
+          height: 14.5%;
+          z-index: 1;
+        }
+        .coin-chart-aleo {
+          position: absolute;
+          left: 8%;
+          top: 77.5%; /* 61% + 14.5% + 2% gap */
+          width: 40%;
+          height: 14.5%;
+          z-index: 1;
+        }
 
-      #fleet-hashrate-chart {
-        width: 100%;
-        height: 100%;
-        display: block;
-        background: transparent;
-      }
+        .coin-chart-frame {
+          width: 100%;
+          height: 100%;
+          background: transparent;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+        }
 
-      .efficiency-power-marquee {
-        position: absolute;
-        left: 51%;
-        top: 12%;
-        width: 40%;
-        height: 14.5%;
-        overflow: hidden;
-        z-index: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-      }
+        .coin-chart-frame canvas {
+          width: 100%;
+          height: 100%;
+          display: block;
+          background: transparent;
+        }
 
-      .efficiency-chart-stack,
-      .power-chart-stack {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        left: 0;
-        top: 0;
-        transition: opacity 0.5s, transform 0.5s;
-      }
+        ha-card {
+          padding: 0;
+          overflow: hidden;
+        }
 
-      #efficiency-chart,
-      #power-chart {
-        width: 100%;
-        height: 100%;
-        display: block;
-        background: transparent;
-      }
+          .card-shell {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 16 / 17;
+          }
 
-      .card-title {
-        position: absolute;
-        top: 4%;
-        left: 35%;
-        width: 30%;
-        height: 5%;
-        border-radius: 999px;
-        padding: 6px 12px;
-        color: #fff;
-        font-size: 0.8rem;
-        font-family: "AlienEncountersBold", sans-serif;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-        background: transparent;
-        border: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
+        .card-image {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center 35%;
+          z-index: 0;
+          pointer-events: none;
+        }
 
-      .sensor-chip {
-        position: absolute;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        white-space: nowrap;
-        background: transparent;
-        color: #fff;
-        border-radius: 8px;
-        padding: 6px 8px;
-        font-size: 0.927rem;
-        line-height: 1;
-        border: none;
-      }
+        .stage-layer {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          background: transparent;
+          pointer-events: none;
+        }
 
-      .chip-label {
-        opacity: 0.9;
-        font-family: "AlienEncountersRegular", sans-serif;
-      }
+        .stage-item {
+          pointer-events: auto;
+          z-index: 2;
+        }
 
-      .chip-icon {
-        font-size: 1.105rem;
-        --mdc-icon-size: 1.105rem;
-        line-height: 1;
-      }
+        .fleet-hashrate-chart-wrap {
+          position: absolute;
+          left: 8%;
+          top: 12%;
+          width: 40%;
+          height: 14.5%;
+          z-index: 1;
+        }
 
-      .chip-icon-online {
-        color: #39ff14;
-      }
+        #fleet-hashrate-chart {
+          width: 100%;
+          height: 100%;
+          display: block;
+          background: transparent;
+        }
 
-      .chip-icon-offline {
-        color: #ff2bd6;
-      }
+        .efficiency-power-marquee {
+          position: absolute;
+          left: 51%;
+          top: 12%;
+          width: 40%;
+          height: 14.5%;
+          overflow: hidden;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          justify-content: flex-start;
+        }
 
-      .chip-icon-efficiency {
-        color: #00f5ff;
-      }
+        .efficiency-chart-stack,
+        .power-chart-stack {
+          width: 100%;
+          height: 100%;
+          position: absolute;
+          left: 0;
+          top: 0;
+          transition: opacity 0.5s, transform 0.5s;
+        }
 
-      .chip-icon-power {
-        color: #f8ff00;
-      }
+        #efficiency-chart,
+        #power-chart {
+          width: 100%;
+          height: 100%;
+          display: block;
+          background: transparent;
+        }
 
-      .hud-btc-rate,
-      .hud-bch-rate,
-      .hud-ltc-rate,
-      .hud-aleo-rate,
-      .hud-solo-pool-hashrate {
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        width: 20%;
-        padding: 0;
-        font-size: 0.751rem;
-        line-height: 1.15;
-        text-align: center;
-      }
+        .card-title {
+          position: absolute;
+          top: 4%;
+          left: 35%;
+          width: 30%;
+          height: 5%;
+          border-radius: 999px;
+          padding: 6px 12px;
+          color: #fff;
+          font-size: 0.8rem;
+          font-family: "AlienEncountersBold", sans-serif;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+          background: transparent;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
 
-      .chip-rate-head {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-      }
+        .sensor-chip {
+          position: absolute;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
+          background: transparent;
+          color: #fff;
+          border-radius: 8px;
+          padding: 6px 8px;
+          font-size: 0.927rem;
+          line-height: 1;
+          border: none;
+        }
 
-      .hud-btc-rate .chip-value,
-      .hud-bch-rate .chip-value,
-      .hud-ltc-rate .chip-value,
-      .hud-aleo-rate .chip-value,
-      .hud-solo-pool-hashrate .chip-value {
-        margin-left: 0;
-        width: 100%;
-        text-align: center;
-      }
+        .chip-label {
+          opacity: 0.9;
+          font-family: "AlienEncountersRegular", sans-serif;
+        }
 
-      .hud-btc-rate .chip-label {
-        color: #ff8c00;
-      }
+        .chip-icon {
+          font-size: 1.105rem;
+          --mdc-icon-size: 1.105rem;
+          line-height: 1;
+        }
 
-      .hud-bch-rate .chip-label {
-        color: #39ff14;
-      }
+        .chip-icon-online {
+          color: #39ff14;
+        }
 
-      .hud-ltc-rate .chip-label {
-        color: #00f5ff;
-      }
+        .chip-icon-offline {
+          color: #ff2bd6;
+        }
 
-      .hud-aleo-rate .chip-label {
-        color: #f8ff00;
-      }
+        .chip-icon-efficiency {
+          color: #00f5ff;
+        }
 
-      .miners-title {
-        display: none;
-      }
+        .chip-icon-power {
+          color: #f8ff00;
+        }
 
-      .chip-value {
-        margin-left: 2px;
-        text-align: left;
-        font-family: "AlienEncountersBold", sans-serif;
-        font-weight: 700;
-      }
+        .hud-btc-rate,
+        .hud-bch-rate,
+        .hud-ltc-rate,
+        .hud-aleo-rate,
+        .hud-solo-pool-hashrate {
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          width: 20%;
+          padding: 0;
+          font-size: 0.751rem;
+          line-height: 1.15;
+          text-align: center;
+        }
 
-      .hud-online {
-        top: 83%;
-        left: 35.5%;
-        width: 15%;
-        height: 6%;
-      }
+        .chip-rate-head {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+        }
 
-      .hud-efficiency {
-        display: none;
-      }
+        .hud-btc-rate .chip-value,
+        .hud-bch-rate .chip-value,
+        .hud-ltc-rate .chip-value,
+        .hud-aleo-rate .chip-value,
+        .hud-solo-pool-hashrate .chip-value {
+          margin-left: 0;
+          width: 100%;
+          text-align: center;
+        }
 
-      .hud-power {
-        top: 95%;
-        left: 78.5%;
-        width: 15%;
-        height: 6%;
-      }
+        .hud-btc-rate .chip-label {
+          color: #ff8c00;
+        }
 
-      .hud-offline {
-        top: 83%;
-        left: 65.5%;
-        width: 15%;
-        height: 6%;
-      }
+        .hud-bch-rate .chip-label {
+          color: #39ff14;
+        }
 
-      .hud-btc-rate {
-        top: 42.5%;
-        left: 23%;
-        width: 15%;
-        height: 6%;
-      }
+        .hud-ltc-rate .chip-label {
+          color: #00f5ff;
+        }
 
-      .hud-bch-rate {
-        top: 48%;
-        left: 23%;
-        width: 15%;
-        height: 6%;
-      }
+        .hud-aleo-rate .chip-label {
+          color: #f8ff00;
+        }
 
-      .hud-ltc-rate {
-        top: 42.5%;
-        left: 77%;
-        width: 15%;
-        height: 6%;
-      }
+        .miners-title {
+          display: none;
+        }
 
-      .hud-aleo-rate {
-        top: 48%;
-        left: 77%;
-        width: 15%;
-        height: 6%;
-      }
+        .chip-value {
+          margin-left: 2px;
+          text-align: left;
+          font-family: "AlienEncountersBold", sans-serif;
+          font-weight: 700;
+        }
 
-      .hud-solo-pool-hashrate {
-        top: 45.25%;
-        left: 50%;
-        width: 15%;
-        height: 6%;
-      }
+        .hud-online {
+          top: 83%;
+          left: 35.5%;
+          width: 15%;
+          height: 6%;
+        }
 
-      /* Mobile-specific CSS removed for desktop-only styling */
-    `;
+        .hud-efficiency {
+          display: none;
+        }
+
+        .hud-power {
+          top: 95%;
+          left: 78.5%;
+          width: 15%;
+          height: 6%;
+        }
+
+        .hud-offline {
+          top: 83%;
+          left: 65.5%;
+          width: 15%;
+          height: 6%;
+        }
+
+        .hud-btc-rate {
+          top: 42.5%;
+          left: 23%;
+          width: 15%;
+          height: 6%;
+        }
+
+        .hud-bch-rate {
+          top: 48%;
+          left: 23%;
+          width: 15%;
+          height: 6%;
+        }
+
+        .hud-ltc-rate {
+          top: 42.5%;
+          left: 77%;
+          width: 15%;
+          height: 6%;
+        }
+
+        .hud-aleo-rate {
+          top: 48%;
+          left: 77%;
+          width: 15%;
+          height: 6%;
+        }
+
+        .hud-solo-pool-hashrate {
+          top: 45.25%;
+          left: 50%;
+          width: 15%;
+          height: 6%;
+        }
+
+        /* Mobile-specific CSS removed for desktop-only styling */
+      `
+    ];
   }
 }
 
